@@ -580,11 +580,11 @@
         const cityData = {
             buildings: [
                 { id: 'B-001', name: 'Нишка тврђава', coords: [21.8956, 43.3191], height: 45, floors: 0,
-                type: 'fortress', energy: 'A', occupancy: 65, visitors: 45000, yearBuilt: 1720 },
+                    type: 'fortress', energy: 'A', occupancy: 65, visitors: 45000, yearBuilt: 1720 },
                 { id: 'B-002', name: 'Клинички центар', coords: [21.8900, 43.3300], height: 60, floors: 15,
-                type: 'hospital', energy: 'B+', occupancy: 78, visitors: 1200, yearBuilt: 2005 },
+                    type: 'hospital', energy: 'B+', occupancy: 78, visitors: 1200, yearBuilt: 2005 },
                 { id: 'B-003', name: 'Универзитет Ниша', coords: [21.9050, 43.3250], height: 42, floors: 10,
-                type: 'education', energy: 'A', occupancy: 92, visitors: 30000, yearBuilt: 1998 },
+                    type: 'education', energy: 'A', occupancy: 92, visitors: 30000, yearBuilt: 1998 },
                 { id: 'B-004', name: 'ТЦ Форум', coords: [21.8850, 43.3350], height: 35, floors: 8, type: 'commerce',
                     energy: 'B', occupancy: 85, visitors: 8000, yearBuilt: 2010 },
                 { id: 'B-005', name: 'Железничка станица', coords: [21.8800, 43.3150], height: 25, floors: 3,
@@ -796,25 +796,45 @@
         }
 
         // ============================================================
-        // 5. СОЗДАНИЕ 3D ТРАНСПОРТА
+        // 5. СОЗДАНИЕ 3D ТРАНСПОРТА (ИСПРАВЛЕННАЯ ВЕРСИЯ)
         // ============================================================
         function createTransport3D() {
+            // Цвета для разных дорог
+            const roadColors = {
+                'Коридор Е75': '#ff6b6b',
+                'Бул. Цара Душана': '#4ecdc4',
+                'Ул. Николе Пашића': '#ffe66d'
+            };
+
             cityData.transport.forEach((road) => {
                 const points = road.coords.map(c => Cesium.Cartesian3.fromDegrees(c[0], c[1], 1));
+                
+                // ✅ ИСПРАВЛЕНО: убираем colors массив, используем материал для цвета
                 const polyline = new Cesium.PolylineGeometry({
                     positions: points,
                     width: 6,
-                    colors: [Cesium.Color.fromCssColorString('#f44336')],
                     followSurface: true
                 });
 
                 const primitive = new Cesium.Primitive({
                     geometryInstances: new Cesium.GeometryInstance({
-                        geometry: polyline
+                        geometry: polyline,
+                        id: { type: 'road', name: road.name }
                     }),
                     appearance: new Cesium.PolylineColorAppearance({
                         translucent: false
                     })
+                });
+
+                // Устанавливаем цвет через материал
+                const color = roadColors[road.name] || '#f44336';
+                primitive.appearance.material = new Cesium.Material({
+                    fabric: {
+                        type: 'Color',
+                        uniforms: {
+                            color: Cesium.Color.fromCssColorString(color)
+                        }
+                    }
                 });
 
                 cesiumViewer.scene.primitives.add(primitive);
