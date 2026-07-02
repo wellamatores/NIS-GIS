@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Niš Digital Twin — Hybrid GIS</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global Digital Twin — Hybrid GIS Platform</title>
 
     <!-- ===== Leaflet (2D) ===== -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,7 +15,7 @@
     </script>
     <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.113/Build/Cesium/Widgets/widgets.css" />
 
-    <!-- ===== Chart.js (Графики) ===== -->
+    <!-- ===== Chart.js (Charts) ===== -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
 
@@ -23,13 +23,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
+        /* ===== GLOBAL STYLES ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0e17;
@@ -39,7 +38,7 @@
             width: 100vw;
         }
 
-        /* ===== КОНТЕЙНЕРЫ ===== */
+        /* ===== CONTAINERS ===== */
         #cesiumContainer {
             position: absolute;
             top: 0;
@@ -48,7 +47,6 @@
             height: 100%;
             z-index: 0;
         }
-
         #leafletContainer {
             position: absolute;
             top: 0;
@@ -58,7 +56,6 @@
             z-index: 0;
             display: none;
         }
-
         .leaflet-control-zoom {
             display: none !important;
         }
@@ -67,8 +64,32 @@
             color: #667 !important;
             font-size: 9px !important;
         }
+        .leaflet-control-layers {
+            background: rgba(10, 14, 23, 0.92) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-radius: 10px !important;
+            color: #e0e0e0 !important;
+        }
+        .leaflet-control-layers label {
+            color: #b0b8c4 !important;
+            font-size: 12px !important;
+        }
+        .leaflet-control-layers input[type="checkbox"] {
+            accent-color: #4fc3f7 !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: rgba(10, 14, 23, 0.95) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-radius: 10px !important;
+            color: #e0e0e0 !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(10, 14, 23, 0.95) !important;
+        }
 
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
+        /* ===== TOP BAR ===== */
         .top-bar {
             position: absolute;
             top: 16px;
@@ -89,22 +110,18 @@
             pointer-events: none;
             max-width: 96%;
         }
-
         .top-bar * {
             pointer-events: auto;
         }
-
         .top-bar .logo {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
         .top-bar .logo i {
             font-size: 24px;
             color: #4fc3f7;
         }
-
         .top-bar .logo h1 {
             font-size: 17px;
             font-weight: 700;
@@ -114,7 +131,6 @@
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
-
         .top-bar .logo h1 small {
             font-size: 10px;
             color: #8892a0;
@@ -122,7 +138,6 @@
             font-weight: 400;
             margin-left: 4px;
         }
-
         .top-bar .status {
             display: flex;
             align-items: center;
@@ -132,7 +147,6 @@
             border-left: 1px solid rgba(255, 255, 255, 0.06);
             padding-left: 14px;
         }
-
         .top-bar .status .dot {
             width: 6px;
             height: 6px;
@@ -140,7 +154,6 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
             0%,
             100% {
@@ -152,15 +165,24 @@
                 transform: scale(0.8);
             }
         }
-
-        /* ===== КНОПКИ ПЕРЕКЛЮЧЕНИЯ ===== */
+        .top-bar .stats {
+            display: flex;
+            gap: 14px;
+            font-size: 11px;
+            color: #8892a0;
+            border-left: 1px solid rgba(255, 255, 255, 0.06);
+            padding-left: 14px;
+        }
+        .top-bar .stats .stat-val {
+            color: #4fc3f7;
+            font-weight: 600;
+        }
         .view-toggle {
             display: flex;
             gap: 4px;
             border-left: 1px solid rgba(255, 255, 255, 0.06);
             padding-left: 14px;
         }
-
         .view-btn {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -174,19 +196,234 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-
         .view-btn:hover {
             border-color: rgba(79, 195, 247, 0.3);
             color: #b0b8c4;
         }
-
         .view-btn.active {
             background: rgba(79, 195, 247, 0.2);
             border-color: #4fc3f7;
             color: #4fc3f7;
         }
 
-        /* ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== */
+        /* ===== MENU TOGGLE BUTTON ===== */
+        .menu-toggle {
+            position: absolute;
+            top: 76px;
+            left: 16px;
+            z-index: 1001;
+            background: rgba(10, 14, 23, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #e0e0e0;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .menu-toggle:hover {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: rgba(79, 195, 247, 0.3);
+        }
+        .menu-toggle .badge {
+            font-size: 10px;
+            background: #4fc3f7;
+            color: #0a0e17;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        /* ===== SLIDEOUT MENU ===== */
+        .slideout-menu {
+            position: absolute;
+            top: 70px;
+            left: -420px;
+            width: 400px;
+            max-height: calc(100vh - 160px);
+            z-index: 1000;
+            background: rgba(10, 14, 23, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 16px 18px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+            transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .slideout-menu.open {
+            left: 16px;
+        }
+        .slideout-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+        .slideout-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .slideout-menu::-webkit-scrollbar-thumb {
+            background: #4fc3f7;
+            border-radius: 4px;
+        }
+
+        .menu-section {
+            margin-bottom: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .menu-section .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4fc3f7;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .menu-section .section-title i {
+            font-size: 13px;
+        }
+        .menu-section .section-title .badge {
+            font-size: 9px;
+            background: rgba(79, 195, 247, 0.15);
+            padding: 1px 8px;
+            border-radius: 10px;
+            color: #4fc3f7;
+            font-weight: 400;
+            text-transform: none;
+        }
+
+        .menu-btn {
+            width: 100%;
+            padding: 7px 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #b0b8c4;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-family: inherit;
+        }
+        .menu-btn:hover {
+            background: rgba(79, 195, 247, 0.08);
+            border-color: rgba(79, 195, 247, 0.2);
+            color: #e0e0e0;
+        }
+        .menu-btn.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+        .menu-btn .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-select {
+            width: 100%;
+            padding: 7px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .menu-select:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+        .menu-select option {
+            background: #1a1f2e;
+        }
+
+        .switch-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 12px;
+            cursor: pointer;
+            color: #b0b8c4;
+            transition: 0.2s;
+        }
+        .switch-row:hover {
+            color: #e0e0e0;
+        }
+        .switch-row .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .switch-row .switch-label i {
+            width: 18px;
+            text-align: center;
+        }
+        .switch {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+        .switch .slider:before {
+            content: "";
+            position: absolute;
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .switch input:checked+.slider {
+            background: #4fc3f7;
+        }
+        .switch input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        .menu-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        .menu-grid-2 .menu-btn {
+            margin-bottom: 0;
+        }
+
+        /* ===== TOOL PANEL ===== */
         .tool-panel {
             position: absolute;
             top: 50%;
@@ -197,7 +434,6 @@
             flex-direction: column;
             gap: 6px;
         }
-
         .tool-btn {
             width: 44px;
             height: 44px;
@@ -214,21 +450,19 @@
             justify-content: center;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
-
         .tool-btn:hover {
             background: rgba(79, 195, 247, 0.15);
             border-color: rgba(79, 195, 247, 0.3);
             color: #4fc3f7;
             transform: scale(1.05);
         }
-
         .tool-btn.active {
             background: rgba(79, 195, 247, 0.2);
             border-color: #4fc3f7;
             color: #4fc3f7;
         }
 
-        /* ===== КОМАНДНЫЙ ЦЕНТР (KPI) ===== */
+        /* ===== COMMAND CENTER (KPI) ===== */
         .command-center {
             position: absolute;
             bottom: 20px;
@@ -248,7 +482,6 @@
             justify-content: center;
             max-width: 96%;
         }
-
         .kpi-item {
             display: flex;
             align-items: center;
@@ -256,26 +489,22 @@
             font-size: 12px;
             color: #b0b8c4;
         }
-
         .kpi-item i {
             font-size: 16px;
             width: 22px;
             text-align: center;
         }
-
         .kpi-item .value {
             font-weight: 700;
             color: #e0e0e0;
             font-size: 15px;
             font-family: 'Courier New', monospace;
         }
-
         .kpi-item .trend {
             font-size: 10px;
             padding: 1px 6px;
             border-radius: 10px;
         }
-
         .trend.up {
             color: #81c784;
             background: rgba(129, 199, 132, 0.15);
@@ -289,7 +518,7 @@
             background: rgba(255, 183, 77, 0.15);
         }
 
-        /* ===== ИНФО-ПАНЕЛЬ ===== */
+        /* ===== INFO PANEL ===== */
         .info-panel {
             position: absolute;
             bottom: 80px;
@@ -300,16 +529,14 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 12px;
             padding: 14px 18px;
-            max-width: 280px;
+            max-width: 300px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
             display: none;
         }
-
         .info-panel.visible {
             display: block;
             animation: fadeIn 0.3s ease;
         }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -320,39 +547,28 @@
                 transform: translateY(0);
             }
         }
-
         .info-panel .title {
             font-size: 15px;
             font-weight: 600;
             color: #e0e0e0;
             margin-bottom: 2px;
         }
-
         .info-panel .sub {
             font-size: 11px;
             color: #8892a0;
             margin-bottom: 6px;
         }
-
         .info-panel .detail {
             font-size: 12px;
             color: #b0b8c4;
             line-height: 1.8;
         }
-
         .info-panel .detail i {
             width: 18px;
             color: #4fc3f7;
         }
 
-        .info-panel .detail .label {
-            color: #667;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        /* ===== МИНИ-ГРАФИК ===== */
+        /* ===== MINI CHART ===== */
         .mini-chart-container {
             position: absolute;
             top: 76px;
@@ -367,22 +583,84 @@
             height: 80px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
-
         .mini-chart-container canvas {
             width: 100% !important;
             height: 100% !important;
         }
 
-        /* ===== АДАПТИВ ===== */
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 23, 0.92);
+            backdrop-filter: blur(8px);
+            padding: 6px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #8892a0;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 1000;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .status-bar .highlight {
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(10, 14, 23, 0.95);
+            border-left: 4px solid #4fc3f7;
+            padding: 12px 18px;
+            border-radius: 8px;
+            z-index: 9999;
+            max-width: 360px;
+            font-size: 13px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(12px);
+            color: #e0e0e0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+        .notification .title {
+            font-weight: 600;
+            color: #4fc3f7;
+            font-size: 12px;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             .top-bar .status {
+                display: none;
+            }
+            .top-bar .stats {
                 display: none;
             }
             .mini-chart-container {
                 display: none;
             }
+            .slideout-menu {
+                width: 340px;
+                left: -360px;
+            }
         }
-
         @media (max-width: 768px) {
             .top-bar {
                 top: 10px;
@@ -430,11 +708,26 @@
                 max-width: 200px;
                 padding: 10px 12px;
             }
-            .info-panel .title {
-                font-size: 13px;
+            .slideout-menu {
+                width: 290px;
+                left: -310px;
+                padding: 12px 14px;
+                max-height: calc(100vh - 140px);
+            }
+            .menu-toggle {
+                top: 66px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 16px;
+            }
+            .menu-grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .status-bar {
+                font-size: 9px;
+                padding: 4px 12px;
             }
         }
-
         @media (max-width: 480px) {
             .top-bar .logo i {
                 font-size: 18px;
@@ -462,52 +755,179 @@
                 font-size: 11px;
                 width: 14px;
             }
+            .slideout-menu {
+                width: 260px;
+                left: -280px;
+                padding: 10px 10px;
+            }
+            .slideout-menu.open {
+                left: 8px;
+            }
+            .menu-toggle {
+                top: 62px;
+                left: 8px;
+                padding: 6px 10px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== 3D КОНТЕЙНЕР (Cesium) ===== -->
+    <!-- ===== 3D CONTAINER ===== -->
     <div id="cesiumContainer"></div>
 
-    <!-- ===== 2D КОНТЕЙНЕР (Leaflet) ===== -->
+    <!-- ===== 2D CONTAINER ===== -->
     <div id="leafletContainer"></div>
 
-    <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
+    <!-- ===== TOP BAR ===== -->
     <div class="top-bar">
         <div class="logo">
             <i class="fas fa-cube"></i>
-            <h1>Niš Digital Twin <small>Hybrid GIS</small></h1>
+            <h1>Global Digital Twin <small>Hybrid GIS</small></h1>
         </div>
-
         <div class="status">
             <span class="dot"></span>
             <span>Online · Live</span>
         </div>
-
+        <div class="stats">
+            <span><i class="fas fa-layer-group"></i> Layers: <span class="stat-val" id="layerCount">9</span></span>
+            <span><i class="fas fa-globe"></i> Continents: <span class="stat-val">6</span></span>
+            <span><i class="fas fa-satellite"></i> <span class="stat-val" id="gpsStatus">● GPS</span></span>
+        </div>
         <div class="view-toggle">
             <button class="view-btn active" id="view3D" onclick="switchView('3d')">3D</button>
             <button class="view-btn" id="view2D" onclick="switchView('2d')">2D</button>
         </div>
     </div>
 
-    <!-- ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== -->
-    <div class="tool-panel">
-        <button class="tool-btn" id="btnZoomIn" title="Приближи"><i class="fas fa-plus"></i></button>
-        <button class="tool-btn" id="btnZoomOut" title="Отдальи"><i class="fas fa-minus"></i></button>
-        <button class="tool-btn" id="btnReset" title="Сброс"><i class="fas fa-home"></i></button>
-        <button class="tool-btn" id="btnLocation" title="Моја локација"><i class="fas fa-location-dot"></i></button>
-        <button class="tool-btn" id="btnAutoRotate" title="Автовращение"><i class="fas fa-sync-alt"></i></button>
-        <button class="tool-btn" id="btnToggleTraffic" title="Трафик"><i class="fas fa-car"></i></button>
-        <button class="tool-btn" id="btnToggleBuildings" title="Здания"><i class="fas fa-building"></i></button>
+    <!-- ===== MENU TOGGLE ===== -->
+    <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()">
+        <i class="fas fa-bars"></i>
+        <span class="badge">Menu</span>
+    </button>
+
+    <!-- ===== SLIDEOUT MENU ===== -->
+    <div class="slideout-menu" id="slideoutMenu">
+
+        <!-- ===== MAP TYPE ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-map"></i> Map Type</div>
+            <div class="menu-grid-2">
+                <button class="menu-btn active" data-type="standard" onclick="setMapType('standard')">
+                    <i class="fas fa-map"></i> Standard
+                </button>
+                <button class="menu-btn" data-type="topo" onclick="setMapType('topo')">
+                    <i class="fas fa-mountain"></i> Topo
+                </button>
+                <button class="menu-btn" data-type="satellite" onclick="setMapType('satellite')">
+                    <i class="fas fa-satellite"></i> Satellite
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== PROVIDER ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-server"></i> Provider</div>
+            <select class="menu-select" id="providerSelect" onchange="switchProvider(this.value)">
+                <option value="osm">OpenStreetMap</option>
+                <option value="cartodb">CartoDB Dark</option>
+                <option value="google">Google Maps</option>
+                <option value="yandex">Yandex Maps</option>
+                <option value="stadiamaps">Stadia Maps</option>
+                <option value="cyclosm">CyclOSM</option>
+                <option value="wikimapia">WikiMapia</option>
+                <option value="opentopomap">OpenTopoMap</option>
+                <option value="arcgis">ArcGIS Satellite</option>
+            </select>
+        </div>
+
+        <!-- ===== CONTINENTS ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-globe-americas"></i> Continents</div>
+            <div class="menu-grid-2">
+                <button class="menu-btn" onclick="flyToContinent('eurasia')">
+                    <span class="color-dot" style="background:#00b894;"></span> Eurasia
+                </button>
+                <button class="menu-btn" onclick="flyToContinent('africa')">
+                    <span class="color-dot" style="background:#f39c12;"></span> Africa
+                </button>
+                <button class="menu-btn" onclick="flyToContinent('northamerica')">
+                    <span class="color-dot" style="background:#3498db;"></span> N. America
+                </button>
+                <button class="menu-btn" onclick="flyToContinent('southamerica')">
+                    <span class="color-dot" style="background:#2ecc71;"></span> S. America
+                </button>
+                <button class="menu-btn" onclick="flyToContinent('australia')">
+                    <span class="color-dot" style="background:#e74c3c;"></span> Australia
+                </button>
+                <button class="menu-btn" onclick="flyToContinent('antarctica')">
+                    <span class="color-dot" style="background:#ecf0f1;"></span> Antarctica
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== WEATHER LAYERS ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-cloud-sun"></i> Weather <span class="badge">OpenWeatherMap</span></div>
+            <div class="switch-row" onclick="toggleRain()">
+                <span class="switch-label"><i class="fas fa-cloud-rain" style="color:#5d7cff;"></i> Precipitation</span>
+                <label class="switch"><input type="checkbox" id="layerRain"><span class="slider"></span></label>
+            </div>
+            <div class="switch-row" onclick="toggleTemp()">
+                <span class="switch-label"><i class="fas fa-temperature-high" style="color:#ff6b6b;"></i> Temperature</span>
+                <label class="switch"><input type="checkbox" id="layerTemp"><span class="slider"></span></label>
+            </div>
+            <div class="switch-row" onclick="toggleWind()">
+                <span class="switch-label"><i class="fas fa-wind" style="color:#74b9ff;"></i> Wind</span>
+                <label class="switch"><input type="checkbox" id="layerWind"><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <!-- ===== TRANSPORT LAYERS ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-route"></i> Transport <span class="badge">OSM</span></div>
+            <div class="switch-row" onclick="toggleRoads()">
+                <span class="switch-label"><i class="fas fa-road" style="color:#fdcb6e;"></i> Roads</span>
+                <label class="switch"><input type="checkbox" checked id="layerRoads"><span class="slider"></span></label>
+            </div>
+            <div class="switch-row" onclick="toggleRail()">
+                <span class="switch-label"><i class="fas fa-train" style="color:#a29bfe;"></i> Railways</span>
+                <label class="switch"><input type="checkbox" id="layerRail"><span class="slider"></span></label>
+            </div>
+            <div class="switch-row" onclick="toggleAirports()">
+                <span class="switch-label"><i class="fas fa-plane" style="color:#4fc3f7;"></i> Airports</span>
+                <label class="switch"><input type="checkbox" id="layerAirports"><span class="slider"></span></label>
+            </div>
+        </div>
+
+        <!-- ===== ACTIONS ===== -->
+        <div class="menu-section">
+            <div class="section-title"><i class="fas fa-bolt"></i> Actions</div>
+            <button class="menu-btn" onclick="locateUser()"><i class="fas fa-location-crosshairs"></i> My Location</button>
+            <button class="menu-btn" onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Fullscreen</button>
+            <button class="menu-btn" onclick="toggleTraffic3D()"><i class="fas fa-car"></i> Toggle Traffic (3D)</button>
+            <button class="menu-btn" onclick="toggleBuildings3D()"><i class="fas fa-building"></i> Toggle Buildings (3D)</button>
+        </div>
+
     </div>
 
-    <!-- ===== МИНИ-ГРАФИК (AQI) ===== -->
+    <!-- ===== TOOL PANEL ===== -->
+    <div class="tool-panel">
+        <button class="tool-btn" id="btnZoomIn" title="Zoom In"><i class="fas fa-plus"></i></button>
+        <button class="tool-btn" id="btnZoomOut" title="Zoom Out"><i class="fas fa-minus"></i></button>
+        <button class="tool-btn" id="btnReset" title="Reset View"><i class="fas fa-home"></i></button>
+        <button class="tool-btn" id="btnLocation" title="My Location"><i class="fas fa-location-dot"></i></button>
+        <button class="tool-btn" id="btnAutoRotate" title="Auto Rotate"><i class="fas fa-sync-alt"></i></button>
+        <button class="tool-btn" id="btnFullscreen" title="Fullscreen"><i class="fas fa-expand"></i></button>
+    </div>
+
+    <!-- ===== MINI CHART ===== -->
     <div class="mini-chart-container">
         <canvas id="miniChart"></canvas>
     </div>
 
-    <!-- ===== КОМАНДНЫЙ ЦЕНТР (KPI) ===== -->
+    <!-- ===== COMMAND CENTER ===== -->
     <div class="command-center" id="commandCenter">
         <div class="kpi-item">
             <i class="fas fa-thermometer-half" style="color:#ff6b6b;"></i>
@@ -545,23 +965,31 @@
         </div>
     </div>
 
-    <!-- ===== ИНФО-ПАНЕЛЬ ===== -->
+    <!-- ===== INFO PANEL ===== -->
     <div class="info-panel" id="infoPanel">
-        <div class="title" id="infoTitle">Нишка тврђава</div>
-        <div class="sub" id="infoSub">🏛️ Културно наслеђе · XVIII век</div>
+        <div class="title" id="infoTitle">Nis Fortress</div>
+        <div class="sub" id="infoSub">🏛️ Cultural Heritage · 18th Century</div>
         <div class="detail" id="infoDetail">
             <i class="fas fa-map-pin"></i> <span id="infoCoords">43.3191°N, 21.8956°E</span><br>
-            <i class="fas fa-users"></i> <span class="label">Посета</span>: <span id="infoVisitors">45,000</span>/год<br>
-            <i class="fas fa-star" style="color:#FFD700;"></i> <span class="label">Оцена</span>: <span id="infoRating">4.8</span>
+            <i class="fas fa-users"></i> Visitors: <span id="infoVisitors">45,000</span>/year<br>
+            <i class="fas fa-star" style="color:#FFD700;"></i> Rating: <span id="infoRating">4.8</span>
         </div>
     </div>
 
+    <!-- ===== STATUS BAR ===== -->
+    <div class="status-bar">
+        <span id="coordDisplay">📍 43.3191°, 21.8956°</span>
+        <span>Layer: <span id="layerDisplay" class="highlight">Standard</span></span>
+        <span>Provider: <span id="providerDisplay" class="highlight">OpenStreetMap</span></span>
+        <span id="continentDisplay">🌍 Continent: Europe</span>
+    </div>
+
     <!-- ============================================================ -->
-    <!-- ===== СКРИПТ ===== -->
+    <!-- ===== SCRIPT ===== -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
-        // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // 1. GLOBAL VARIABLES
         // ============================================================
         let currentView = '3d';
         let cesiumViewer = null;
@@ -573,60 +1001,118 @@
         let transportEntities = [];
         let buildingPrimitives = [];
         let selectedObject = null;
+        let mapType = 'standard';
+        let currentProvider = 'osm';
+        let baseLayer = null;
+        let userMarker = null;
+        let extraLayers = {};
+        let continentMarkers = [];
+        let menuOpen = false;
+
+        // 2D layer refs
+        let layerRain = null;
+        let layerTemp = null;
+        let layerWind = null;
+        let layerRoads = null;
+        let layerRail = null;
+        let layerAirports = null;
 
         // ============================================================
-        // 2. ДАННЫЕ
+        // 2. CONTINENTS DATA
+        // ============================================================
+        const CONTINENTS = {
+            'eurasia': { name: 'Eurasia', coords: [55.0, 90.0], color: '#00b894', emoji: '🌏',
+            desc: 'Largest continent' },
+            'africa': { name: 'Africa', coords: [8.0, 20.0], color: '#f39c12', emoji: '🌍',
+            desc: 'Second largest continent' },
+            'northamerica': { name: 'North America', coords: [45.0, -100.0], color: '#3498db', emoji: '🌎',
+                desc: 'From Alaska to Panama' },
+            'southamerica': { name: 'South America', coords: [-15.0, -60.0], color: '#2ecc71', emoji: '🌎',
+                desc: 'Amazon and Andes' },
+            'australia': { name: 'Australia', coords: [-25.0, 134.0], color: '#e74c3c', emoji: '🦘',
+                desc: 'Smallest continent' },
+            'antarctica': { name: 'Antarctica', coords: [-82.0, 40.0], color: '#ecf0f1', emoji: '❄️',
+                desc: 'Coldest continent' }
+        };
+
+        // ============================================================
+        // 3. MAP PROVIDERS
+        // ============================================================
+        const PROVIDERS = {
+            osm: { type: 'standard', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            name: 'OpenStreetMap' },
+            cartodb: { type: 'standard', url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                name: 'CartoDB Dark' },
+            google: { type: 'standard', url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                name: 'Google Maps' },
+            yandex: { type: 'standard', url: 'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
+                name: 'Yandex Maps' },
+            stadiamaps: { type: 'standard',
+                url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', name: 'Stadia Maps' },
+            cyclosm: { type: 'standard', url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+                name: 'CyclOSM' },
+            wikimapia: { type: 'standard', url: 'https://tiles.wikimapia.org/?x={x}&y={y}&z={z}',
+            name: 'WikiMapia' },
+            opentopomap: { type: 'topo', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+            name: 'OpenTopoMap' },
+            arcgis: { type: 'satellite',
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                name: 'ArcGIS Satellite' }
+        };
+
+        // ============================================================
+        // 4. CITY DATA
         // ============================================================
         const cityData = {
             buildings: [
-                { id: 'B-001', name: 'Нишка тврђава', coords: [21.8956, 43.3191], height: 45, floors: 0,
+                { id: 'B-001', name: 'Nis Fortress', coords: [21.8956, 43.3191], height: 45, floors: 0,
                     type: 'fortress', energy: 'A', occupancy: 65, visitors: 45000, yearBuilt: 1720 },
-                { id: 'B-002', name: 'Клинички центар', coords: [21.8900, 43.3300], height: 60, floors: 15,
+                { id: 'B-002', name: 'Clinical Center', coords: [21.8900, 43.3300], height: 60, floors: 15,
                     type: 'hospital', energy: 'B+', occupancy: 78, visitors: 1200, yearBuilt: 2005 },
-                { id: 'B-003', name: 'Универзитет Ниша', coords: [21.9050, 43.3250], height: 42, floors: 10,
+                { id: 'B-003', name: 'University of Nis', coords: [21.9050, 43.3250], height: 42, floors: 10,
                     type: 'education', energy: 'A', occupancy: 92, visitors: 30000, yearBuilt: 1998 },
-                { id: 'B-004', name: 'ТЦ Форум', coords: [21.8850, 43.3350], height: 35, floors: 8, type: 'commerce',
-                    energy: 'B', occupancy: 85, visitors: 8000, yearBuilt: 2010 },
-                { id: 'B-005', name: 'Железничка станица', coords: [21.8800, 43.3150], height: 25, floors: 3,
+                { id: 'B-004', name: 'Forum Mall', coords: [21.8850, 43.3350], height: 35, floors: 8,
+                    type: 'commerce', energy: 'B', occupancy: 85, visitors: 8000, yearBuilt: 2010 },
+                { id: 'B-005', name: 'Railway Station', coords: [21.8800, 43.3150], height: 25, floors: 3,
                     type: 'transport', energy: 'C', occupancy: 60, visitors: 5000, yearBuilt: 1975 },
-                { id: 'B-006', name: 'Градска скупштина', coords: [21.8950, 43.3200], height: 38, floors: 9,
+                { id: 'B-006', name: 'City Hall', coords: [21.8950, 43.3200], height: 38, floors: 9,
                     type: 'government', energy: 'B+', occupancy: 70, visitors: 300, yearBuilt: 1965 },
-                { id: 'B-007', name: 'Споменик Челе-Кула', coords: [21.9123, 43.3356], height: 12, floors: 0,
+                { id: 'B-007', name: 'Cele Kula Monument', coords: [21.9123, 43.3356], height: 12, floors: 0,
                     type: 'monument', energy: 'D', occupancy: 0, visitors: 20000, yearBuilt: 1809 },
-                { id: 'B-008', name: 'Парк Св. Саве', coords: [21.8990, 43.3280], height: 5, floors: 0, type: 'park',
-                    energy: 'A+', occupancy: 95, visitors: 1500, yearBuilt: 1990 },
+                { id: 'B-008', name: 'St. Sava Park', coords: [21.8990, 43.3280], height: 5, floors: 0,
+                    type: 'park', energy: 'A+', occupancy: 95, visitors: 1500, yearBuilt: 1990 },
             ],
             sensors: [
-                { id: 'S-001', name: 'Сензор A1', coords: [21.8950, 43.3200], pm25: 42, pm10: 55, no2: 23, o3: 18,
-                    temp: 23.5 },
-                { id: 'S-002', name: 'Сензор A2', coords: [21.9100, 43.3300], pm25: 38, pm10: 48, no2: 19, o3: 22,
-                    temp: 24.1 },
-                { id: 'S-003', name: 'Сензор A3', coords: [21.8800, 43.3050], pm25: 45, pm10: 60, no2: 31, o3: 14,
-                    temp: 22.8 },
-                { id: 'S-004', name: 'Сензор A4', coords: [21.9000, 43.3400], pm25: 35, pm10: 42, no2: 16, o3: 25,
-                    temp: 24.5 },
-                { id: 'S-005', name: 'Сензор A5', coords: [21.9200, 43.3150], pm25: 40, pm10: 52, no2: 21, o3: 20,
-                    temp: 23.2 },
+                { id: 'S-001', name: 'Sensor A1', coords: [21.8950, 43.3200], pm25: 42, pm10: 55, no2: 23,
+                    o3: 18, temp: 23.5 },
+                { id: 'S-002', name: 'Sensor A2', coords: [21.9100, 43.3300], pm25: 38, pm10: 48, no2: 19,
+                    o3: 22, temp: 24.1 },
+                { id: 'S-003', name: 'Sensor A3', coords: [21.8800, 43.3050], pm25: 45, pm10: 60, no2: 31,
+                    o3: 14, temp: 22.8 },
+                { id: 'S-004', name: 'Sensor A4', coords: [21.9000, 43.3400], pm25: 35, pm10: 42, no2: 16,
+                    o3: 25, temp: 24.5 },
+                { id: 'S-005', name: 'Sensor A5', coords: [21.9200, 43.3150], pm25: 40, pm10: 52, no2: 21,
+                    o3: 20, temp: 23.2 },
             ],
             transport: [
-                { id: 'T-001', name: 'Коридор Е75', coords: [
+                { id: 'T-001', name: 'Corridor E75', coords: [
                         [21.8700, 43.3100],
                         [21.8956, 43.3191],
                         [21.9200, 43.3280]
                     ], type: 'highway', speed: 90 },
-                { id: 'T-002', name: 'Бул. Цара Душана', coords: [
+                { id: 'T-002', name: 'Tsar Dushan Blvd', coords: [
                         [21.8800, 43.3000],
                         [21.8956, 43.3191],
                         [21.9100, 43.3350]
                     ], type: 'road', speed: 50 },
-                { id: 'T-003', name: 'Ул. Николе Пашића', coords: [
+                { id: 'T-003', name: 'Nikola Pasic St', coords: [
                         [21.8850, 43.3250],
                         [21.8956, 43.3191],
                         [21.9050, 43.3100]
                     ], type: 'road', speed: 40 },
             ],
             water: [
-                { id: 'W-001', name: 'Нишава', coords: [
+                { id: 'W-001', name: 'Nisava River', coords: [
                         [21.8700, 43.3100],
                         [21.8956, 43.3191],
                         [21.9100, 43.3250],
@@ -636,7 +1122,18 @@
         };
 
         // ============================================================
-        // 3. ИНИЦИАЛИЗАЦИЯ Cesium (3D)
+        // 5. MENU TOGGLE
+        // ============================================================
+        function toggleMenu() {
+            menuOpen = !menuOpen;
+            document.getElementById('slideoutMenu').classList.toggle('open', menuOpen);
+            document.getElementById('menuToggle').innerHTML = menuOpen ?
+                '<i class="fas fa-times"></i><span class="badge">Close</span>' :
+                '<i class="fas fa-bars"></i><span class="badge">Menu</span>';
+        }
+
+        // ============================================================
+        // 6. CESIUM 3D INIT
         // ============================================================
         function initCesium() {
             Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYzQzNmFjOC1hYjg5LTRlNzItYmZiYi04YTA5NjUwMTA4NTgiLCJpZCI6Mjg1Niwic2NvcGVzIjpbImFzciIsImdjIl0sImlhdCI6MTU0NzA3ODEzMX0.tS1t_6F3EL-7TZ7jO_lGjs6It55Dqk5Ubo3u59pjEY0';
@@ -660,62 +1157,89 @@
                 backgroundColor: Cesium.Color.fromCssColorString('#0a0e17')
             });
 
-            // Настройка сцены
             const scene = cesiumViewer.scene;
             scene.globe.enableLighting = true;
             scene.globe.baseColor = Cesium.Color.fromCssColorString('#1a1f2e');
             scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e17');
 
-            // Камера над Нишем
             cesiumViewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(21.8956, 43.3191, 1800),
-                orientation: {
-                    heading: Cesium.Math.toRadians(10),
-                    pitch: Cesium.Math.toRadians(-35),
-                    roll: 0
-                },
+                orientation: { heading: Cesium.Math.toRadians(10), pitch: Cesium.Math.toRadians(-35),
+                roll: 0 },
                 duration: 2
             });
 
-            // Создаём здания
             createBuildings3D();
-
-            // Создаём транспорт
             createTransport3D();
-
-            // Создаём водную поверхность
             createWater3D();
-
-            // Обработка кликов
             setupCesiumPicking();
-
-            // Автовращение
             setupAutoRotate();
+            addContinentMarkers3D();
 
-            console.log('✅ Cesium 3D инициализирован');
+            console.log('✅ Cesium 3D initialized');
         }
 
         // ============================================================
-        // 4. СОЗДАНИЕ 3D ЗДАНИЙ
+        // 7. 3D CONTINENT MARKERS
+        // ============================================================
+        function addContinentMarkers3D() {
+            Object.entries(CONTINENTS).forEach(([id, c]) => {
+                const entity = new Cesium.Entity({
+                    position: Cesium.Cartesian3.fromDegrees(c.coords[1], c.coords[0], 100000),
+                    billboard: {
+                        image: 'data:image/svg+xml,' + encodeURIComponent(
+                            `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="20" fill="${c.color}" opacity="0.3" stroke="${c.color}" stroke-width="2"/>
+                                <circle cx="24" cy="24" r="14" fill="${c.color}" opacity="0.5"/>
+                                <text x="24" y="28" font-size="18" text-anchor="middle" fill="white">${c.emoji}</text>
+                            </svg>`
+                        ),
+                        scale: 1.0,
+                        heightReference: Cesium.HeightReference.NONE,
+                        pixelOffset: new Cesium.Cartesian2(0, -20)
+                    },
+                    label: {
+                        text: c.name,
+                        font: '14px Segoe UI, sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        pixelOffset: new Cesium.Cartesian2(0, -50),
+                        showBackground: true,
+                        backgroundColor: Cesium.Color.fromCssColorString('rgba(10,14,23,0.7)'),
+                        backgroundPadding: new Cesium.Cartesian2(6, 4)
+                    },
+                    properties: {
+                        continentId: id,
+                        name: c.name,
+                        emoji: c.emoji,
+                        desc: c.desc,
+                        coords: c.coords
+                    }
+                });
+                entity._clickHandler = function() { flyToContinent(id); };
+                cesiumViewer.entities.add(entity);
+                continentMarkers.push(entity);
+            });
+        }
+
+        // ============================================================
+        // 8. 3D BUILDINGS
         // ============================================================
         function createBuildings3D() {
-            cityData.buildings.forEach((data, index) => {
+            cityData.buildings.forEach((data) => {
                 const position = Cesium.Cartesian3.fromDegrees(
                     data.coords[0] + (Math.random() - 0.5) * 0.002,
                     data.coords[1] + (Math.random() - 0.5) * 0.002,
                     0
                 );
-
-                // Высота здания
                 const height = data.type === 'fortress' ? 20 :
                     data.type === 'monument' ? 10 :
                     data.type === 'park' ? 3 :
                     data.height || 30;
-
                 const width = 20 + Math.random() * 30;
                 const depth = 15 + Math.random() * 25;
-
-                // Цвет в зависимости от типа
                 const colors = {
                     fortress: '#FF9800',
                     hospital: '#9C27B0',
@@ -728,7 +1252,6 @@
                 };
                 const color = Cesium.Color.fromCssColorString(colors[data.type] || '#4fc3f7');
 
-                // Создаём примитив
                 const primitive = new Cesium.Primitive({
                     geometryInstances: new Cesium.GeometryInstance({
                         geometry: new Cesium.BoxGeometry({
@@ -744,39 +1267,24 @@
                             energy: data.energy,
                             occupancy: data.occupancy,
                             visitors: data.visitors,
-                            yearBuilt: data.yearBuilt
+                            yearBuilt: data.yearBuilt,
+                            coords: data.coords
                         }
                     }),
                     appearance: new Cesium.PerInstanceColorAppearance({
                         flat: false,
                         translucent: false,
-                        renderState: {
-                            depthTest: { enabled: true }
-                        }
+                        renderState: { depthTest: { enabled: true } }
                     })
                 });
-
-                // Материал с цветом
                 primitive.appearance.material = new Cesium.Material({
-                    fabric: {
-                        type: 'Color',
-                        uniforms: {
-                            color: color
-                        }
-                    }
+                    fabric: { type: 'Color', uniforms: { color: color } }
                 });
-
-                // Добавляем в сцену
                 cesiumViewer.scene.primitives.add(primitive);
                 buildingPrimitives.push(primitive);
 
-                // Добавляем метку
                 const label = new Cesium.Entity({
-                    position: Cesium.Cartesian3.fromDegrees(
-                        data.coords[0],
-                        data.coords[1],
-                        height + 10
-                    ),
+                    position: Cesium.Cartesian3.fromDegrees(data.coords[0], data.coords[1], height + 10),
                     label: {
                         text: data.name,
                         font: '14px Segoe UI, sans-serif',
@@ -796,25 +1304,19 @@
         }
 
         // ============================================================
-        // 5. СОЗДАНИЕ 3D ТРАНСПОРТА (ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ)
+        // 9. 3D TRANSPORT
         // ============================================================
         function createTransport3D() {
-            // Цвета для разных дорог
             const roadColors = {
-                'Коридор Е75': '#ff6b6b',
-                'Бул. Цара Душана': '#4ecdc4',
-                'Ул. Николе Пашића': '#ffe66d'
+                'Corridor E75': '#ff6b6b',
+                'Tsar Dushan Blvd': '#4ecdc4',
+                'Nikola Pasic St': '#ffe66d'
             };
-
             cityData.transport.forEach((road) => {
-                // Создаём полилинию через Entity (более простой и надёжный способ)
                 const positions = [];
-                road.coords.forEach(c => {
-                    positions.push(c[0]);
+                road.coords.forEach(c => { positions.push(c[0]);
                     positions.push(c[1]);
-                    positions.push(1); // высота
-                });
-
+                    positions.push(1); });
                 const polylineEntity = new Cesium.Entity({
                     polyline: {
                         positions: Cesium.Cartesian3.fromDegreesArrayHeights(positions),
@@ -822,17 +1324,12 @@
                         material: Cesium.Color.fromCssColorString(roadColors[road.name] || '#f44336'),
                         clampToGround: true
                     },
-                    properties: {
-                        type: 'road',
-                        name: road.name
-                    }
+                    properties: { type: 'road', name: road.name }
                 });
-                
                 cesiumViewer.entities.add(polylineEntity);
                 transportEntities.push(polylineEntity);
             });
 
-            // Добавляем движущиеся машины
             for (let i = 0; i < 15; i++) {
                 const lat = 43.310 + Math.random() * 0.025;
                 const lon = 21.880 + Math.random() * 0.035;
@@ -853,8 +1350,6 @@
                 });
                 cesiumViewer.entities.add(entity);
                 transportEntities.push(entity);
-
-                // Храним скорость и направление
                 entity._speed = 0.00003 + Math.random() * 0.00004;
                 entity._direction = Math.random() > 0.5 ? 1 : -1;
                 entity._startLon = lon;
@@ -862,18 +1357,12 @@
                 entity._rangeLon = 0.01 + Math.random() * 0.02;
                 entity._rangeLat = 0.005 + Math.random() * 0.01;
             }
-
-            // Анимация транспорта
             animateTransport();
         }
 
         function animateTransport() {
             function step() {
-                if (!trafficEnabled) {
-                    requestAnimationFrame(step);
-                    return;
-                }
-
+                if (!trafficEnabled) { requestAnimationFrame(step); return; }
                 transportEntities.forEach(entity => {
                     if (entity._speed) {
                         const pos = entity.position.getValue(new Cesium.JulianDate());
@@ -881,14 +1370,9 @@
                             const cart = Cesium.Cartographic.fromCartesian(pos);
                             let newLon = cart.longitude + entity._speed * entity._direction;
                             let newLat = cart.latitude + entity._speed * 0.3 * (Math.random() - 0.5);
-
-                            // Границы движения
                             if (newLon > 21.92 || newLon < 21.87) entity._direction *= -1;
                             if (newLat > 43.33 || newLat < 43.30) entity._direction *= -1;
-
                             entity.position = Cesium.Cartesian3.fromRadians(newLon, newLat, 1.5);
-
-                            // Поворот автомобиля
                             const heading = Math.atan2(
                                 Math.sin(newLon - cart.longitude),
                                 Math.cos(newLat - cart.latitude)
@@ -897,28 +1381,24 @@
                         }
                     }
                 });
-
                 requestAnimationFrame(step);
             }
             requestAnimationFrame(step);
         }
 
         // ============================================================
-        // 6. СОЗДАНИЕ 3D ВОДЫ
+        // 10. 3D WATER
         // ============================================================
         function createWater3D() {
-            const waterCoords = cityData.water[0].coords.map(c => {
-                return Cesium.Cartesian3.fromDegrees(c[0], c[1], 0.5);
-            });
-
-            // Полигон воды
+            const waterCoords = cityData.water[0].coords.map(c =>
+                Cesium.Cartesian3.fromDegrees(c[0], c[1], 0.5)
+            );
             const waterGeometry = new Cesium.PolygonGeometry({
                 polygonHierarchy: new Cesium.PolygonHierarchy(waterCoords),
                 height: 0.5,
                 extrudedHeight: 0.5,
                 vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT
             });
-
             const water = new Cesium.Primitive({
                 geometryInstances: new Cesium.GeometryInstance({
                     geometry: waterGeometry,
@@ -927,73 +1407,47 @@
                 appearance: new Cesium.PerInstanceColorAppearance({
                     flat: true,
                     translucent: true,
-                    renderState: {
-                        blending: Cesium.BlendingState.ALPHA_BLEND,
-                        depthTest: { enabled: true }
-                    }
+                    renderState: { blending: Cesium.BlendingState.ALPHA_BLEND, depthTest: { enabled: true } }
                 })
             });
-
-            // Синий с прозрачностью
             water.appearance.material = new Cesium.Material({
-                fabric: {
-                    type: 'Color',
-                    uniforms: {
-                        color: new Cesium.Color(0.13, 0.55, 0.95, 0.6)
-                    }
-                }
+                fabric: { type: 'Color', uniforms: { color: new Cesium.Color(0.13, 0.55, 0.95, 0.6) } }
             });
-
             cesiumViewer.scene.primitives.add(water);
 
-            // Анимация уровня воды
-            animateWater(water);
-        }
-
-        function animateWater(waterPrimitive) {
             let waterLevel = 4.8;
 
             function step() {
                 waterLevel += (Math.random() - 0.5) * 0.02;
                 waterLevel = Math.max(4.0, Math.min(5.5, waterLevel));
                 document.getElementById('kpi-water').textContent = waterLevel.toFixed(1);
-
-                // Обновляем высоту воды
-                if (waterPrimitive.geometryInstances) {
-                    const instances = waterPrimitive.geometryInstances;
-                    if (Array.isArray(instances)) {
-                        instances.forEach(instance => {
-                            if (instance.geometry && instance.geometry._height !== undefined) {
-                                instance.geometry._height = waterLevel;
-                            }
-                        });
-                    }
-                }
-
                 requestAnimationFrame(step);
             }
             requestAnimationFrame(step);
         }
 
         // ============================================================
-        // 7. ОБРАБОТКА КЛИКОВ В 3D
+        // 11. 3D PICKING
         // ============================================================
         function setupCesiumPicking() {
             const handler = new Cesium.ScreenSpaceEventHandler(cesiumViewer.scene.canvas);
-
             handler.setInputAction(function(click) {
                 const picked = cesiumViewer.scene.pick(click.position);
                 if (Cesium.defined(picked) && picked.primitive) {
                     const id = picked.primitive._id || picked.primitive.id;
                     if (id && id.buildingId) {
                         showInfoPanel3D(id);
+                        return;
                     }
-                } else {
-                    document.getElementById('infoPanel').classList.remove('visible');
                 }
+                const ray = cesiumViewer.camera.getPickRay(click.position);
+                const pickedObj = cesiumViewer.scene.pick(click.position);
+                if (Cesium.defined(pickedObj) && pickedObj.id && pickedObj.id._clickHandler) {
+                    pickedObj.id._clickHandler();
+                    return;
+                }
+                document.getElementById('infoPanel').classList.remove('visible');
             }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-            // Изменение курсора
             handler.setInputAction(function(move) {
                 const picked = cesiumViewer.scene.pick(move.endPosition);
                 cesiumViewer.scene.canvas.style.cursor =
@@ -1003,42 +1457,32 @@
 
         function showInfoPanel3D(data) {
             const panel = document.getElementById('infoPanel');
-            document.getElementById('infoTitle').textContent = data.name || 'Здание';
+            document.getElementById('infoTitle').textContent = data.name || 'Building';
             document.getElementById('infoSub').textContent =
-                '🏛️ ' + (data.type || 'Объект') +
+                '🏛️ ' + (data.type || 'Object') +
                 (data.yearBuilt ? ' · ' + data.yearBuilt : '');
-
             let detail = `<i class="fas fa-map-pin"></i> ${data.buildingId || '—'}<br>`;
-            if (data.floors) {
-                detail += `<i class="fas fa-layer-group"></i> Этажей: ${data.floors}<br>`;
-            }
-            if (data.energy) {
-                detail += `<i class="fas fa-bolt"></i> Энергоэффективность: ${data.energy}<br>`;
-            }
-            if (data.occupancy) {
-                detail += `<i class="fas fa-users"></i> Загрузка: ${data.occupancy}%<br>`;
-            }
-            if (data.visitors) {
-                detail += `<i class="fas fa-flag"></i> Посещаемость: ${data.visitors.toLocaleString()}/год`;
-            }
-
+            if (data.floors) detail += `<i class="fas fa-layer-group"></i> Floors: ${data.floors}<br>`;
+            if (data.energy) detail += `<i class="fas fa-bolt"></i> Energy: ${data.energy}<br>`;
+            if (data.occupancy) detail += `<i class="fas fa-users"></i> Occupancy: ${data.occupancy}%<br>`;
+            if (data.visitors) detail += `<i class="fas fa-flag"></i> Visitors: ${data.visitors.toLocaleString()}/year`;
             document.getElementById('infoDetail').innerHTML = detail;
-            document.getElementById('infoCoords').textContent = '—';
+            if (data.coords) {
+                document.getElementById('infoCoords').textContent =
+                    `${data.coords[1]?.toFixed(4) || '—'}°N, ${data.coords[0]?.toFixed(4) || '—'}°E`;
+            }
             panel.classList.add('visible');
-
             selectedObject = data;
         }
 
         // ============================================================
-        // 8. АВТОВРАЩЕНИЕ
+        // 12. AUTO ROTATE
         // ============================================================
         function setupAutoRotate() {
             document.getElementById('btnAutoRotate').addEventListener('click', function() {
                 autoRotate = !autoRotate;
                 this.classList.toggle('active');
-                if (autoRotate) {
-                    startAutoRotate();
-                }
+                if (autoRotate) startAutoRotate();
             });
         }
 
@@ -1049,7 +1493,6 @@
                 const position = camera.position;
                 const center = Cesium.Cartesian3.fromDegrees(21.8956, 43.3191, 0);
                 const radius = Cesium.Cartesian3.distance(position, center);
-
                 if (radius > 100) {
                     const heading = camera.heading + 0.005;
                     camera.lookAt(center, new Cesium.Cartesian3(
@@ -1064,7 +1507,28 @@
         }
 
         // ============================================================
-        // 9. ИНИЦИАЛИЗАЦИЯ Leaflet (2D)
+        // 13. FLY TO CONTINENT
+        // ============================================================
+        function flyToContinent(id) {
+            const c = CONTINENTS[id];
+            if (!c) return;
+            if (currentView === '3d' && cesiumViewer) {
+                cesiumViewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(c.coords[1], c.coords[0], 2000000),
+                    duration: 3
+                });
+                document.getElementById('continentDisplay').textContent = `🌍 Continent: ${c.name}`;
+                notify(`📍 ${c.emoji} ${c.name}`, 'success');
+            } else if (currentView === '2d' && leafletMap) {
+                leafletMap.flyTo([c.coords[0], c.coords[1]], 3);
+                document.getElementById('continentDisplay').textContent = `🌍 Continent: ${c.name}`;
+                notify(`📍 ${c.emoji} ${c.name}`, 'success');
+            }
+            if (menuOpen) toggleMenu();
+        }
+
+        // ============================================================
+        // 14. LEAFLET 2D INIT
         // ============================================================
         function initLeaflet() {
             leafletMap = L.map('leafletContainer', {
@@ -1073,32 +1537,249 @@
                 zoomControl: false,
                 attributionControl: true
             });
+            loadProvider('osm');
+            addContinentMarkers2D();
+            setupWeatherLayers();
+            setupTransportLayers();
+            addCityMarkers();
+            addTransportLines();
+            addWaterLines();
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CartoDB',
-                subdomains: 'abcd',
+            leafletMap.on('click', function(e) {
+                updateCoords(e.latlng);
+                reverseGeocode(e.latlng);
+            });
+            leafletMap.on('move', function() {
+                updateCoords(leafletMap.getCenter());
+            });
+            updateCoords(leafletMap.getCenter());
+            console.log('✅ Leaflet 2D initialized');
+        }
+
+        // ============================================================
+        // 15. LOAD PROVIDER
+        // ============================================================
+        function loadProvider(providerId) {
+            const provider = PROVIDERS[providerId];
+            if (!provider) return;
+            if (baseLayer) leafletMap.removeLayer(baseLayer);
+            baseLayer = L.tileLayer(provider.url, {
                 maxZoom: 19,
-                minZoom: 10
+                attribution: provider.name,
+                subdomains: 'abcd'
             }).addTo(leafletMap);
+            currentProvider = providerId;
+            mapType = provider.type;
+            document.getElementById('providerDisplay').textContent = provider.name;
+            document.getElementById('layerDisplay').textContent = provider.type === 'standard' ? 'Standard' :
+                provider.type === 'topo' ? 'Topographic' : 'Satellite';
+            document.getElementById('layerCount').textContent = '9';
+            document.getElementById('providerSelect').value = providerId;
+            document.querySelectorAll('[data-type]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === provider.type);
+            });
+            if (menuOpen) toggleMenu();
+        }
 
-            // Добавляем маркеры объектов
-            const markerData = [
-                ...cityData.buildings.map(b => ({ ...b, category: 'Здание' })),
-                ...cityData.sensors.map(s => ({ ...s, category: 'Сенсор' })),
+        function setMapType(type) {
+            let found = null;
+            for (const [id, p] of Object.entries(PROVIDERS)) {
+                if (p.type === type) { found = id; break; }
+            }
+            if (found) loadProvider(found);
+        }
+
+        function switchProvider(providerId) {
+            loadProvider(providerId);
+        }
+
+        // ============================================================
+        // 16. CONTINENT MARKERS 2D
+        // ============================================================
+        function addContinentMarkers2D() {
+            const markerGroup = L.layerGroup().addTo(leafletMap);
+            Object.entries(CONTINENTS).forEach(([id, c]) => {
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:34px;height:34px;background:${c.color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 0 16px ${c.color};border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:14px;color:#0d1117;font-weight:700;">${c.emoji}</div>`,
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 34],
+                    popupAnchor: [0, -34]
+                });
+                const marker = L.marker([c.coords[0], c.coords[1]], { icon }).addTo(markerGroup);
+                marker.bindPopup(`
+                    <div style="min-width:200px;padding:4px 0;">
+                        <h3 style="color:${c.color};margin:0 0 4px 0;">${c.emoji} ${c.name}</h3>
+                        <p style="margin:0 0 8px 0;font-size:12px;opacity:0.8;">${c.desc}</p>
+                        <button onclick="flyToContinent('${id}')" style="background:${c.color};color:#0d1117;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">
+                            <i class="fas fa-location-arrow"></i> Go
+                        </button>
+                    </div>
+                `);
+            });
+        }
+
+        // ============================================================
+        // 17. WEATHER LAYERS
+        // ============================================================
+        function setupWeatherLayers() {
+            layerRain = L.tileLayer(
+                'https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=bd5e378503939ddaee76f12ad7a97608', {
+                    attribution: '© OpenWeatherMap',
+                    maxZoom: 18,
+                    opacity: 0.7
+                }
+            );
+            layerTemp = L.tileLayer(
+                'https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=bd5e378503939ddaee76f12ad7a97608', {
+                    attribution: '© OpenWeatherMap',
+                    maxZoom: 18,
+                    opacity: 0.7
+                }
+            );
+            layerWind = L.tileLayer(
+                'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=bd5e378503939ddaee76f12ad7a97608', {
+                    attribution: '© OpenWeatherMap',
+                    maxZoom: 18,
+                    opacity: 0.7
+                }
+            );
+            const layerControl = L.control.layers(null, null, {
+                collapsed: false,
+                position: 'bottomright'
+            });
+            layerControl.addOverlay(layerRain, '🌧️ Precipitation');
+            layerControl.addOverlay(layerTemp, '🌡️ Temperature');
+            layerControl.addOverlay(layerWind, '💨 Wind');
+            layerControl.addTo(leafletMap);
+            extraLayers.rain = layerRain;
+            extraLayers.temp = layerTemp;
+            extraLayers.wind = layerWind;
+        }
+
+        function toggleRain() {
+            const checked = document.getElementById('layerRain').checked;
+            if (checked) { if (layerRain) layerRain.addTo(leafletMap);
+                notify('🌧️ Precipitation on', 'info'); } else { if (layerRain) leafletMap.removeLayer(layerRain);
+                notify('🌧️ Precipitation off', 'warning'); }
+        }
+
+        function toggleTemp() {
+            const checked = document.getElementById('layerTemp').checked;
+            if (checked) { if (layerTemp) layerTemp.addTo(leafletMap);
+                notify('🌡️ Temperature on', 'info'); } else { if (layerTemp) leafletMap.removeLayer(layerTemp);
+                notify('🌡️ Temperature off', 'warning'); }
+        }
+
+        function toggleWind() {
+            const checked = document.getElementById('layerWind').checked;
+            if (checked) { if (layerWind) layerWind.addTo(leafletMap);
+                notify('💨 Wind on', 'info'); } else { if (layerWind) leafletMap.removeLayer(layerWind);
+                notify('💨 Wind off', 'warning'); }
+        }
+
+        // ============================================================
+        // 18. TRANSPORT LAYERS
+        // ============================================================
+        function setupTransportLayers() {
+            layerRoads = L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19,
+                    opacity: 0.5
+                }
+            );
+            layerRail = L.tileLayer(
+                'https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19,
+                    opacity: 0.5
+                }
+            );
+            const airportGroup = L.layerGroup();
+            const airports = [
+                { name: 'Nis Airport', coords: [43.3372, 21.8536], iata: 'INI' },
+                { name: 'Belgrade Airport', coords: [44.8194, 20.3069], iata: 'BEG' },
+                { name: 'Pristina Airport', coords: [42.5728, 21.0358], iata: 'PRN' },
+                { name: 'Skopje Airport', coords: [41.9616, 21.6215], iata: 'SKP' },
+                { name: 'Sofia Airport', coords: [42.6967, 23.4114], iata: 'SOF' },
+                { name: 'Thessaloniki Airport', coords: [40.5197, 22.9709], iata: 'SKG' },
+                { name: 'Tirana Airport', coords: [41.4147, 19.7206], iata: 'TIA' },
+                { name: 'Bucharest Airport', coords: [44.5712, 26.0851], iata: 'OTP' },
             ];
+            airports.forEach(a => {
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="background:#4fc3f7;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 0 12px #4fc3f7;"></div>`,
+                    iconSize: [10, 10],
+                    iconAnchor: [5, 5]
+                });
+                const marker = L.marker([a.coords[0], a.coords[1]], { icon })
+                    .bindPopup(
+                        `<div style="font-family:'Segoe UI',sans-serif;color:#e0e0e0;min-width:150px;">
+                            <h4 style="margin:0;color:#4fc3f7;">✈️ ${a.name}</h4>
+                            <div style="font-size:12px;color:#8892a0;">IATA: <b>${a.iata}</b></div>
+                        </div>`
+                    );
+                airportGroup.addLayer(marker);
+            });
+            layerAirports = airportGroup;
 
+            const layerControl = L.control.layers(null, null, {
+                collapsed: false,
+                position: 'bottomright'
+            });
+            layerControl.addOverlay(layerRoads, '🛣️ Roads');
+            layerControl.addOverlay(layerRail, '🚂 Railways');
+            layerControl.addOverlay(layerAirports, '✈️ Airports');
+            layerControl.addTo(leafletMap);
+            layerRoads.addTo(leafletMap);
+            extraLayers.roads = layerRoads;
+            extraLayers.rail = layerRail;
+            extraLayers.airports = layerAirports;
+            document.getElementById('layerRoads').checked = true;
+        }
+
+        function toggleRoads() {
+            const checked = document.getElementById('layerRoads').checked;
+            if (checked) { if (layerRoads) layerRoads.addTo(leafletMap);
+                notify('🛣️ Roads on', 'info'); } else { if (layerRoads) leafletMap.removeLayer(layerRoads);
+                notify('🛣️ Roads off', 'warning'); }
+        }
+
+        function toggleRail() {
+            const checked = document.getElementById('layerRail').checked;
+            if (checked) { if (layerRail) layerRail.addTo(leafletMap);
+                notify('🚂 Railways on', 'info'); } else { if (layerRail) leafletMap.removeLayer(layerRail);
+                notify('🚂 Railways off', 'warning'); }
+        }
+
+        function toggleAirports() {
+            const checked = document.getElementById('layerAirports').checked;
+            if (checked) { if (layerAirports) layerAirports.addTo(leafletMap);
+                notify('✈️ Airports on', 'info'); } else { if (layerAirports) leafletMap.removeLayer(layerAirports);
+                notify('✈️ Airports off', 'warning'); }
+        }
+
+        // ============================================================
+        // 19. CITY MARKERS 2D
+        // ============================================================
+        function addCityMarkers() {
+            const markerData = [
+                ...cityData.buildings.map(b => ({ ...b, category: 'Building' })),
+                ...cityData.sensors.map(s => ({ ...s, category: 'Sensor' })),
+            ];
             const markers = L.layerGroup();
-
             markerData.forEach(item => {
                 const popup = `
-                    <div style="font-family: 'Segoe UI', sans-serif; color:#0a0e17; max-width:200px;">
-                        <h4 style="margin:0 0 2px 0;">${item.name}</h4>
-                        <div style="font-size:11px; color:#666;">${item.category || item.type || ''}</div>
-                        ${item.pm25 ? `<div style="font-size:11px; color:#888;">PM2.5: ${item.pm25} · PM10: ${item.pm10}</div>` : ''}
-                        ${item.visitors ? `<div style="font-size:11px; color:#888;">Посещаемость: ${item.visitors.toLocaleString()}</div>` : ''}
+                    <div style="font-family: 'Segoe UI', sans-serif; color:#e0e0e0; max-width:200px;">
+                        <h4 style="margin:0 0 2px 0;color:#4fc3f7;">${item.name}</h4>
+                        <div style="font-size:11px; color:#8892a0;">${item.category || item.type || ''}</div>
+                        ${item.pm25 ? `<div style="font-size:11px; color:#8892a0;">PM2.5: ${item.pm25} · PM10: ${item.pm10}</div>` : ''}
+                        ${item.visitors ? `<div style="font-size:11px; color:#8892a0;">Visitors: ${item.visitors.toLocaleString()}</div>` : ''}
+                        ${item.occupancy ? `<div style="font-size:11px; color:#8892a0;">Occupancy: ${item.occupancy}%</div>` : ''}
                     </div>
                 `;
-
                 const color = item.type === 'fortress' || item.type === 'monument' ? '#FF9800' :
                     item.type === 'hospital' ? '#9C27B0' :
                     item.type === 'education' ? '#4CAF50' :
@@ -1106,7 +1787,6 @@
                     item.type === 'transport' ? '#f44336' :
                     item.pm25 ? '#00BCD4' :
                     '#4fc3f7';
-
                 const marker = L.circleMarker([item.coords[1], item.coords[0]], {
                     radius: 8,
                     fillColor: color,
@@ -1115,89 +1795,104 @@
                     opacity: 1,
                     fillOpacity: 0.9
                 }).bindPopup(popup);
-
-                marker.on('click', function() {
-                    showInfoPanel2D(item);
-                });
-
+                marker.on('click', function() { showInfoPanel2D(item); });
                 markers.addLayer(marker);
             });
-
             markers.addTo(leafletMap);
-
-            // Добавляем линии транспорта
-            cityData.transport.forEach(road => {
-                const coords = road.coords.map(c => [c[1], c[0]]);
-                const line = L.polyline(coords, {
-                    color: '#f44336',
-                    weight: 3,
-                    opacity: 0.6
-                }).bindPopup(`
-                    <div style="font-family: 'Segoe UI', sans-serif;">
-                        <h4 style="margin:0;">${road.name}</h4>
-                        <div style="font-size:11px; color:#666;">${road.type}</div>
-                    </div>
-                `);
-                line.addTo(leafletMap);
-            });
-
-            // Добавляем воду
-            cityData.water.forEach(water => {
-                const coords = water.coords.map(c => [c[1], c[0]]);
-                const line = L.polyline(coords, {
-                    color: '#2196F3',
-                    weight: 4,
-                    opacity: 0.5
-                }).bindPopup(`
-                    <div style="font-family: 'Segoe UI', sans-serif;">
-                        <h4 style="margin:0;">${water.name}</h4>
-                        <div style="font-size:11px; color:#666;">Река</div>
-                    </div>
-                `);
-                line.addTo(leafletMap);
-            });
-
-            console.log('✅ Leaflet 2D инициализирован');
         }
 
         function showInfoPanel2D(item) {
             const panel = document.getElementById('infoPanel');
             document.getElementById('infoTitle').textContent = item.name;
             document.getElementById('infoSub').textContent =
-                '🏷️ ' + (item.category || item.type || 'Объект') +
-                (item.period ? ' · ' + item.period : '');
-
-            let detail = `<i class="fas fa-map-pin"></i> ${item.coords[1]?.toFixed(4) || '—'}°N, ${item.coords[0]?.toFixed(4) || '—'}°E<br>`;
-            if (item.pm25) {
-                detail +=
-                    `<i class="fas fa-wind"></i> PM2.5: ${item.pm25} μg/m³ · PM10: ${item.pm10} μg/m³<br>`;
-            }
-            if (item.visitors) {
-                detail += `<i class="fas fa-users"></i> Посещаемость: ${item.visitors.toLocaleString()}/год<br>`;
-            }
-            if (item.occupancy) {
-                detail += `<i class="fas fa-users"></i> Загрузка: ${item.occupancy}%`;
-            }
-
+                '🏷️ ' + (item.category || item.type || 'Object') +
+                (item.yearBuilt ? ' · ' + item.yearBuilt : '');
+            let detail =
+                `<i class="fas fa-map-pin"></i> ${item.coords[1]?.toFixed(4) || '—'}°N, ${item.coords[0]?.toFixed(4) || '—'}°E<br>`;
+            if (item.pm25) detail +=
+                `<i class="fas fa-wind"></i> PM2.5: ${item.pm25} · PM10: ${item.pm10}<br>`;
+            if (item.visitors) detail +=
+                `<i class="fas fa-users"></i> Visitors: ${item.visitors.toLocaleString()}/year<br>`;
+            if (item.occupancy) detail += `<i class="fas fa-users"></i> Occupancy: ${item.occupancy}%<br>`;
+            if (item.floors) detail += `<i class="fas fa-layer-group"></i> Floors: ${item.floors}<br>`;
+            if (item.energy) detail += `<i class="fas fa-bolt"></i> Energy: ${item.energy}`;
             document.getElementById('infoDetail').innerHTML = detail;
             document.getElementById('infoCoords').textContent =
                 `${item.coords[1]?.toFixed(4) || '—'}°N, ${item.coords[0]?.toFixed(4) || '—'}°E`;
             panel.classList.add('visible');
-
             selectedObject = item;
         }
 
         // ============================================================
-        // 10. ПЕРЕКЛЮЧЕНИЕ МЕЖДУ 2D И 3D
+        // 20. TRANSPORT & WATER LINES 2D
+        // ============================================================
+        function addTransportLines() {
+            cityData.transport.forEach(road => {
+                const coords = road.coords.map(c => [c[1], c[0]]);
+                const colors = {
+                    'Corridor E75': '#ff6b6b',
+                    'Tsar Dushan Blvd': '#4ecdc4',
+                    'Nikola Pasic St': '#ffe66d'
+                };
+                L.polyline(coords, { color: colors[road.name] || '#f44336', weight: 4, opacity: 0.7 })
+                    .bindPopup(
+                        `<div style="font-family: 'Segoe UI', sans-serif;color:#e0e0e0;">
+                            <h4 style="margin:0;color:#4fc3f7;">${road.name}</h4>
+                            <div style="font-size:11px;color:#8892a0;">${road.type} · ${road.speed} km/h</div>
+                        </div>`
+                    ).addTo(leafletMap);
+            });
+        }
+
+        function addWaterLines() {
+            cityData.water.forEach(water => {
+                const coords = water.coords.map(c => [c[1], c[0]]);
+                L.polyline(coords, { color: '#2196F3', weight: 4, opacity: 0.5 })
+                    .bindPopup(
+                        `<div style="font-family: 'Segoe UI', sans-serif;color:#e0e0e0;">
+                            <h4 style="margin:0;color:#4fc3f7;">${water.name}</h4>
+                            <div style="font-size:11px;color:#8892a0;">River</div>
+                        </div>`
+                    ).addTo(leafletMap);
+            });
+        }
+
+        // ============================================================
+        // 21. REVERSE GEOCODING
+        // ============================================================
+        function reverseGeocode(coords) {
+            const url =
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&zoom=14`;
+            fetch(url).then(r => r.json()).then(data => {
+                if (data.display_name) {
+                    const short = data.display_name.split(',').slice(0, 3).join(', ');
+                    L.popup()
+                        .setLatLng(coords)
+                        .setContent(
+                            `<div style="padding:8px;"><b>📍 ${short}</b><br><span style="font-size:11px;opacity:0.7;">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</span></div>`
+                        )
+                        .openOn(leafletMap);
+                }
+            }).catch(() => {});
+        }
+
+        // ============================================================
+        // 22. COORDINATES UPDATE
+        // ============================================================
+        function updateCoords(coords) {
+            document.getElementById('coordDisplay').textContent =
+                `📍 ${coords.lat.toFixed(5)}°, ${coords.lng.toFixed(5)}°`;
+        }
+
+        // ============================================================
+        // 23. SWITCH VIEW
         // ============================================================
         function switchView(view) {
             currentView = view;
             document.getElementById('view3D').classList.toggle('active', view === '3d');
             document.getElementById('view2D').classList.toggle('active', view === '2d');
-
             const cesiumContainer = document.getElementById('cesiumContainer');
             const leafletContainer = document.getElementById('leafletContainer');
-
             if (view === '3d') {
                 cesiumContainer.style.display = 'block';
                 leafletContainer.style.display = 'none';
@@ -1210,17 +1905,110 @@
             } else {
                 cesiumContainer.style.display = 'none';
                 leafletContainer.style.display = 'block';
-                if (leafletMap) {
-                    leafletMap.flyTo([43.3191, 21.8956], 14);
-                }
+                setTimeout(() => {
+                    if (leafletMap) { leafletMap.invalidateSize();
+                        leafletMap.flyTo([43.3191, 21.8956], 14); }
+                }, 100);
             }
+            if (menuOpen) toggleMenu();
         }
 
         // ============================================================
-        // 11. КОНТРОЛЫ
+        // 24. LOCATE USER
+        // ============================================================
+        function locateUser() {
+            if (!navigator.geolocation) { notify('Geolocation not supported', 'error'); return; }
+            notify('Locating...', 'info');
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const coords = [pos.coords.latitude, pos.coords.longitude];
+                    if (userMarker && leafletMap) leafletMap.removeLayer(userMarker);
+                    if (currentView === '3d' && cesiumViewer) {
+                        cesiumViewer.camera.flyTo({
+                            destination: Cesium.Cartesian3.fromDegrees(pos.coords.longitude, pos.coords
+                                .latitude, 500),
+                            duration: 1
+                        });
+                        document.getElementById('gpsStatus').innerHTML = '● GPS ▲';
+                        notify('Location found', 'success');
+                    } else if (currentView === '2d' && leafletMap) {
+                        const icon = L.divIcon({
+                            className: '',
+                            html: `<div style="width:24px;height:24px;background:#4fc3f7;border-radius:50%;border:3px solid white;box-shadow:0 0 20px #4fc3f7;"></div>`,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        });
+                        userMarker = L.marker(coords, { icon })
+                            .addTo(leafletMap)
+                            .bindPopup('<b>📍 You are here</b>')
+                            .openPopup();
+                        leafletMap.flyTo(coords, 10);
+                        document.getElementById('gpsStatus').innerHTML = '● GPS ▲';
+                        notify('Location found', 'success');
+                    }
+                    if (menuOpen) toggleMenu();
+                },
+                function(err) {
+                    const messages = { 1: 'Access denied', 2: 'Signal unavailable', 3: 'Timeout' };
+                    notify(`GPS: ${messages[err.code] || 'Error'}`, 'error');
+                    document.getElementById('gpsStatus').innerHTML = '● GPS ✕';
+                }, { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+
+        // ============================================================
+        // 25. FULLSCREEN
+        // ============================================================
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
+                notify('Fullscreen mode', 'success');
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+                notify('Exited fullscreen', 'info');
+            }
+            if (menuOpen) toggleMenu();
+        }
+
+        // ============================================================
+        // 26. 3D TOGGLES
+        // ============================================================
+        function toggleTraffic3D() {
+            trafficEnabled = !trafficEnabled;
+            transportEntities.forEach(entity => { if (entity.show !== undefined) entity.show = trafficEnabled; });
+            notify(trafficEnabled ? '🚗 Traffic enabled' : '🚗 Traffic disabled', trafficEnabled ? 'success' : 'warning');
+            if (menuOpen) toggleMenu();
+        }
+
+        function toggleBuildings3D() {
+            buildingsEnabled = !buildingsEnabled;
+            buildingPrimitives.forEach(p => { p.show = buildingsEnabled; });
+            notify(buildingsEnabled ? '🏛️ Buildings shown' : '🏛️ Buildings hidden', buildingsEnabled ? 'success' :
+                'warning');
+            if (menuOpen) toggleMenu();
+        }
+
+        // ============================================================
+        // 27. NOTIFICATIONS
+        // ============================================================
+        function notify(msg, type = 'info') {
+            const colors = { info: '#4fc3f7', success: '#81c784', warning: '#ffb74d', error: '#ef5350' };
+            const el = document.createElement('div');
+            el.className = 'notification';
+            el.style.borderLeftColor = colors[type] || colors.info;
+            el.innerHTML = `<div class="title">${type.toUpperCase()}</div><div>${msg}</div>`;
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.4s';
+                setTimeout(() => el.remove(), 400);
+            }, 2500);
+        }
+
+        // ============================================================
+        // 28. CONTROLS SETUP
         // ============================================================
         function setupControls() {
-            // Зум 3D
             document.getElementById('btnZoomIn').addEventListener('click', function() {
                 if (currentView === '3d' && cesiumViewer) {
                     const camera = cesiumViewer.camera;
@@ -1228,11 +2016,8 @@
                     const center = Cesium.Cartesian3.fromDegrees(21.8956, 43.3191, 0);
                     const newPos = Cesium.Cartesian3.lerp(pos, center, 0.1, new Cesium.Cartesian3());
                     camera.flyTo({ destination: newPos, duration: 0.5 });
-                } else if (currentView === '2d' && leafletMap) {
-                    leafletMap.zoomIn();
-                }
+                } else if (currentView === '2d' && leafletMap) leafletMap.zoomIn();
             });
-
             document.getElementById('btnZoomOut').addEventListener('click', function() {
                 if (currentView === '3d' && cesiumViewer) {
                     const camera = cesiumViewer.camera;
@@ -1241,81 +2026,32 @@
                     const dir = Cesium.Cartesian3.subtract(pos, center, new Cesium.Cartesian3());
                     const newPos = Cesium.Cartesian3.add(pos, dir, new Cesium.Cartesian3());
                     camera.flyTo({ destination: newPos, duration: 0.5 });
-                } else if (currentView === '2d' && leafletMap) {
-                    leafletMap.zoomOut();
-                }
+                } else if (currentView === '2d' && leafletMap) leafletMap.zoomOut();
             });
-
             document.getElementById('btnReset').addEventListener('click', function() {
                 if (currentView === '3d' && cesiumViewer) {
                     cesiumViewer.camera.flyTo({
                         destination: Cesium.Cartesian3.fromDegrees(21.8956, 43.3191, 1800),
                         duration: 1
                     });
-                } else if (currentView === '2d' && leafletMap) {
-                    leafletMap.flyTo([43.3191, 21.8956], 14);
-                }
+                } else if (currentView === '2d' && leafletMap) leafletMap.flyTo([43.3191, 21.8956], 14);
                 document.getElementById('infoPanel').classList.remove('visible');
+                notify('View reset', 'info');
             });
-
-            // Моя локация
-            document.getElementById('btnLocation').addEventListener('click', function() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const lat = pos.coords.latitude;
-                            const lon = pos.coords.longitude;
-                            if (currentView === '3d' && cesiumViewer) {
-                                cesiumViewer.camera.flyTo({
-                                    destination: Cesium.Cartesian3.fromDegrees(lon, lat, 500),
-                                    duration: 1
-                                });
-                            } else if (currentView === '2d' && leafletMap) {
-                                leafletMap.flyTo([lat, lon], 16);
-                            }
-                        },
-                        () => alert('Не удалось определить местоположение'),
-                        { enableHighAccuracy: true, timeout: 10000 }
-                    );
-                } else {
-                    alert('GPS не поддерживается');
-                }
-            });
-
-            // Трафик
-            document.getElementById('btnToggleTraffic').addEventListener('click', function() {
-                trafficEnabled = !trafficEnabled;
-                this.classList.toggle('active');
-                transportEntities.forEach(entity => {
-                    if (entity.show !== undefined) {
-                        entity.show = trafficEnabled;
-                    }
-                });
-            });
-
-            // Здания
-            document.getElementById('btnToggleBuildings').addEventListener('click', function() {
-                buildingsEnabled = !buildingsEnabled;
-                this.classList.toggle('active');
-                buildingPrimitives.forEach(p => {
-                    p.show = buildingsEnabled;
-                });
-            });
+            document.getElementById('btnLocation').addEventListener('click', locateUser);
+            document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
         }
 
         // ============================================================
-        // 12. МИНИ-ГРАФИК (AQI)
+        // 29. MINI CHART
         // ============================================================
         function initMiniChart() {
             const ctx = document.getElementById('miniChart').getContext('2d');
-
-            // Генерируем данные AQI за 24 часа
             const data = [];
             for (let i = 0; i < 24; i++) {
                 const base = 35 + Math.sin(i / 6) * 15;
                 data.push(Math.max(15, Math.min(90, base + (Math.random() - 0.5) * 15)));
             }
-
             miniChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1334,83 +2070,42 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => `AQI: ${ctx.parsed.y}`
-                            }
-                        }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { display: false }
-                        },
-                        y: {
-                            grid: { display: false },
-                            ticks: { display: false },
-                            min: 0,
-                            max: 100
-                        }
+                        x: { grid: { display: false }, ticks: { display: false } },
+                        y: { grid: { display: false }, ticks: { display: false }, min: 0, max: 100 }
                     },
-                    animation: {
-                        duration: 500
-                    }
+                    animation: { duration: 500 }
                 }
             });
-
-            // Обновляем данные каждые 5 секунд
-            setInterval(() => {
-                if (miniChart) {
-                    const newData = miniChart.data.datasets[0].data;
-                    newData.shift();
-                    const base = 35 + Math.sin(Date.now() / 60000) * 15;
-                    newData.push(Math.max(15, Math.min(90, base + (Math.random() - 0.5) * 15)));
-                    miniChart.update();
-                }
-            }, 5000);
         }
 
         // ============================================================
-        // 13. ОБНОВЛЕНИЕ KPI
+        // 30. UPDATE KPI
         // ============================================================
         function updateKPI() {
-            // Температура
             const temp = (22 + Math.random() * 4).toFixed(1);
             document.getElementById('kpi-temp').textContent = temp;
-
-            // AQI
             const aqi = Math.floor(30 + Math.random() * 30);
             document.getElementById('kpi-aqi').textContent = aqi;
             document.getElementById('kpi-aqi-trend').textContent = Math.random() > 0.5 ? '↑' : '↓';
             document.getElementById('kpi-aqi-trend').className = 'trend ' + (Math.random() > 0.5 ? 'up' : 'down');
-
-            // Трафик
             const traffic = Math.floor(60 + Math.random() * 35);
             document.getElementById('kpi-traffic').textContent = traffic;
             document.getElementById('kpi-traffic-trend').textContent = Math.random() > 0.5 ? '↑' : '↓';
             document.getElementById('kpi-traffic-trend').className = 'trend ' + (Math.random() > 0.5 ? 'up' : 'down');
-
-            // Энергия
             const energy = Math.floor(120 + Math.random() * 60);
             document.getElementById('kpi-energy').textContent = energy;
             document.getElementById('kpi-energy-trend').textContent = Math.random() > 0.5 ? '↑' : '↓';
             document.getElementById('kpi-energy-trend').className = 'trend ' + (Math.random() > 0.5 ? 'up' : 'down');
-
-            // Инциденты
             const incidents = Math.floor(Math.random() * 5);
             document.getElementById('kpi-incidents').textContent = incidents;
             document.getElementById('kpi-incidents-trend').textContent = Math.random() > 0.5 ? '↑' : '↓';
             document.getElementById('kpi-incidents-trend').className = 'trend ' + (Math.random() > 0.5 ? 'up' : 'down');
-
-            // Туристы
             const tourists = Math.floor(800 + Math.random() * 800);
             document.getElementById('kpi-tourists').textContent = tourists.toLocaleString();
             document.getElementById('kpi-tourists-trend').textContent = Math.random() > 0.5 ? '↑' : '↓';
             document.getElementById('kpi-tourists-trend').className = 'trend ' + (Math.random() > 0.5 ? 'up' : 'down');
-
-            // Обновление мини-графика
             if (miniChart) {
                 const newData = miniChart.data.datasets[0].data;
                 newData.shift();
@@ -1421,70 +2116,67 @@
         }
 
         // ============================================================
-        // 14. ИНИЦИАЛИЗАЦИЯ
+        // 31. INIT
         // ============================================================
         function init() {
-            // Сначала инициализируем Cesium
             initCesium();
-
-            // Затем Leaflet
             initLeaflet();
-
-            // Мини-график
             initMiniChart();
-
-            // Контролы
             setupControls();
-
-            // Обновляем KPI каждые 3 секунды
             setInterval(updateKPI, 3000);
-
-            // Скрываем 2D по умолчанию
             document.getElementById('leafletContainer').style.display = 'none';
 
-            console.log('🚀 Niš Digital Twin Hybrid GIS запущен!');
-            console.log('📍 3D и 2D режимы доступны');
-            console.log('📊 KPI обновляются в реальном времени');
-            console.log('🏛️ Кликните по объекту для информации');
+            // Expose global functions
+            window.flyToContinent = flyToContinent;
+            window.switchView = switchView;
+            window.locateUser = locateUser;
+            window.toggleFullscreen = toggleFullscreen;
+            window.toggleMenu = toggleMenu;
+            window.setMapType = setMapType;
+            window.switchProvider = switchProvider;
+            window.toggleRain = toggleRain;
+            window.toggleTemp = toggleTemp;
+            window.toggleWind = toggleWind;
+            window.toggleRoads = toggleRoads;
+            window.toggleRail = toggleRail;
+            window.toggleAirports = toggleAirports;
+            window.toggleTraffic3D = toggleTraffic3D;
+            window.toggleBuildings3D = toggleBuildings3D;
+            window.notify = notify;
 
-            // Показываем подсказку
+            console.log('🚀 Global Digital Twin Hybrid GIS launched!');
+            console.log('📍 3D and 2D modes available');
+            console.log('🌍 All 6 continents with markers');
+            console.log('📊 9 map providers available');
+            console.log('🌧️ Weather layers: precipitation, temperature, wind');
+            console.log('🚂 Transport layers: roads, railways, airports');
+            console.log('📈 KPI updating in real-time');
+            console.log('📋 Slide-out menu with all controls');
+
             setTimeout(() => {
                 const panel = document.getElementById('infoPanel');
                 panel.classList.add('visible');
-                document.getElementById('infoTitle').textContent = '👋 Добро пожаловать!';
-                document.getElementById('infoSub').textContent = 'Niš Digital Twin Hybrid GIS';
+                document.getElementById('infoTitle').textContent = '👋 Welcome!';
+                document.getElementById('infoSub').textContent = 'Global Digital Twin Hybrid GIS';
                 document.getElementById('infoDetail').innerHTML = `
-                    <i class="fas fa-cube"></i> 3D-режим — нажмите на здание<br>
-                    <i class="fas fa-map"></i> 2D-режим — кликните по маркеру<br>
-                    <i class="fas fa-sync-alt"></i> Включите автовращение<br>
-                    <i class="fas fa-thermometer-half"></i> Данные обновляются в реальном времени
+                    <i class="fas fa-cube"></i> 3D mode — click on buildings<br>
+                    <i class="fas fa-map"></i> 2D mode — click on markers<br>
+                    <i class="fas fa-cloud-rain"></i> Enable weather layers in 2D<br>
+                    <i class="fas fa-globe"></i> Click continent markers to fly<br>
+                    <i class="fas fa-thermometer-half"></i> Data updates in real-time<br>
+                    <i class="fas fa-bars"></i> Click Menu for full controls
                 `;
                 document.getElementById('infoCoords').textContent = '43.3191°N, 21.8956°E';
-
-                setTimeout(() => {
-                    panel.classList.remove('visible');
-                }, 6000);
+                setTimeout(() => { panel.classList.remove('visible'); }, 6000);
             }, 1500);
         }
 
         // ============================================================
-        // 15. ЗАПУСК
+        // 32. START
         // ============================================================
-        window.onload = function() {
-            // Небольшая задержка для загрузки Cesium
-            setTimeout(init, 500);
-        };
-
-        // Очистка ресурсов при закрытии
-        window.onbeforeunload = function() {
-            if (cesiumViewer) {
-                cesiumViewer.destroy();
-            }
-        };
-
-        console.log('📦 Niš Digital Twin Hybrid GIS загружается...');
-        console.log('🔄 Используйте кнопки 3D/2D для переключения режимов');
+        window.onload = function() { setTimeout(init, 500); };
+        window.onbeforeunload = function() { if (cesiumViewer) cesiumViewer.destroy(); };
+        console.log('📦 Global Digital Twin Hybrid GIS loading...');
     </script>
-
 </body>
 </html>
