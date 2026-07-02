@@ -796,7 +796,7 @@
         }
 
         // ============================================================
-        // 5. СОЗДАНИЕ 3D ТРАНСПОРТА (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+        // 5. СОЗДАНИЕ 3D ТРАНСПОРТА (ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ)
         // ============================================================
         function createTransport3D() {
             // Цвета для разных дорог
@@ -807,38 +807,29 @@
             };
 
             cityData.transport.forEach((road) => {
-                const points = road.coords.map(c => Cesium.Cartesian3.fromDegrees(c[0], c[1], 1));
-                
-                // ✅ ИСПРАВЛЕНО: убираем colors массив, используем материал для цвета
-                const polyline = new Cesium.PolylineGeometry({
-                    positions: points,
-                    width: 6,
-                    followSurface: true
+                // Создаём полилинию через Entity (более простой и надёжный способ)
+                const positions = [];
+                road.coords.forEach(c => {
+                    positions.push(c[0]);
+                    positions.push(c[1]);
+                    positions.push(1); // высота
                 });
 
-                const primitive = new Cesium.Primitive({
-                    geometryInstances: new Cesium.GeometryInstance({
-                        geometry: polyline,
-                        id: { type: 'road', name: road.name }
-                    }),
-                    appearance: new Cesium.PolylineColorAppearance({
-                        translucent: false
-                    })
-                });
-
-                // Устанавливаем цвет через материал
-                const color = roadColors[road.name] || '#f44336';
-                primitive.appearance.material = new Cesium.Material({
-                    fabric: {
-                        type: 'Color',
-                        uniforms: {
-                            color: Cesium.Color.fromCssColorString(color)
-                        }
+                const polylineEntity = new Cesium.Entity({
+                    polyline: {
+                        positions: Cesium.Cartesian3.fromDegreesArrayHeights(positions),
+                        width: 6,
+                        material: Cesium.Color.fromCssColorString(roadColors[road.name] || '#f44336'),
+                        clampToGround: true
+                    },
+                    properties: {
+                        type: 'road',
+                        name: road.name
                     }
                 });
-
-                cesiumViewer.scene.primitives.add(primitive);
-                transportEntities.push(primitive);
+                
+                cesiumViewer.entities.add(polylineEntity);
+                transportEntities.push(polylineEntity);
             });
 
             // Добавляем движущиеся машины
