@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niš Digital Twin v2.0 — Прототип</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js">
+    </script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js">
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+
+    <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0b0e14;
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+        .leaflet-control-attribution {
+            background: rgba(11, 14, 20, 0.8) !important;
+            color: #667 !important;
+            font-size: 9px !important;
+            padding: 2px 8px !important;
+        }
+        .leaflet-control-attribution a {
+            color: #4fc3f7 !important;
+        }
+
+        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
+        .top-bar {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            flex-wrap: wrap;
+            justify-content: center;
+            pointer-events: none;
+            max-width: 96%;
+        }
+
+        .top-bar * {
+            pointer-events: auto;
+        }
+
+        .top-bar .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-bar .logo i {
+            font-size: 24px;
+            color: #4fc3f7;
+        }
+
+        .top-bar .logo h1 {
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4fc3f7, #81c784);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .top-bar .logo h1 span {
+            font-size: 11px;
+            color: #4fc3f7;
+            -webkit-text-fill-color: #4fc3f7;
+            font-weight: 400;
+            margin-left: 4px;
+            background: rgba(79, 195, 247, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .top-bar .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #81c784;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            padding-left: 16px;
+        }
+
+        .top-bar .status .dot {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        .lang-selector {
+            display: flex;
+            gap: 4px;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            padding-left: 16px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #8892a0;
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lang-btn:hover {
+            border-color: rgba(79, 195, 247, 0.4);
+            color: #b0b8c4;
+        }
+
+        .lang-btn.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        .top-bar .stats {
+            display: flex;
+            gap: 18px;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            padding-left: 16px;
+        }
+
+        .top-bar .stats .stat-item {
+            text-align: center;
+        }
+
+        .top-bar .stats .stat-item .number {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .top-bar .stats .stat-item .label {
+            font-size: 9px;
+            color: #8892a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== */
+        .tool-panel {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tool-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(8px);
+            color: #b0b8c4;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-btn:hover {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: rgba(79, 195, 247, 0.3);
+            color: #4fc3f7;
+            transform: scale(1.05);
+        }
+
+        .tool-btn.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        .tool-btn .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #f44336;
+            color: white;
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        /* ===== ВРЕМЕННАЯ ШКАЛА ===== */
+        .time-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px 24px;
+            min-width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .time-controls .time-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-controls .time-header .year-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4fc3f7;
+        }
+
+        .time-controls .time-header .mode-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .time-controls .time-header .mode-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #8892a0;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .time-controls .time-header .mode-btn:hover {
+            border-color: rgba(79, 195, 247, 0.3);
+            color: #b0b8c4;
+        }
+
+        .time-controls .time-header .mode-btn.active {
+            background: rgba(79, 195, 247, 0.2);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        .time-controls input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #1a2332, #4fc3f7);
+            border-radius: 2px;
+            outline: none;
+            margin: 4px 0;
+        }
+
+        .time-controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            border: 2px solid #0b0e14;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.4);
+        }
+
+        .time-controls .time-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #667;
+        }
+
+        /* ===== ЛЕГЕНДА ===== */
+        .legend {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px 18px;
+            min-width: 150px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .legend h4 {
+            font-size: 11px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            font-size: 11px;
+            color: #b0b8c4;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== ИНФО-ПАНЕЛЬ ===== */
+        .info-panel {
+            position: absolute;
+            bottom: 110px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px 18px;
+            max-width: 260px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .info-panel.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-panel .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 2px;
+        }
+
+        .info-panel .sub {
+            font-size: 11px;
+            color: #8892a0;
+            margin-bottom: 6px;
+        }
+
+        .info-panel .detail {
+            font-size: 11px;
+            color: #b0b8c4;
+            line-height: 1.6;
+        }
+
+        .info-panel .detail i {
+            width: 18px;
+            color: #4fc3f7;
+        }
+
+        .info-panel .tabs {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 8px;
+        }
+
+        .info-panel .tabs button {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #8892a0;
+            padding: 3px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .info-panel .tabs button.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        .info-panel .tab-content {
+            display: none;
+            margin-top: 6px;
+        }
+
+        .info-panel .tab-content.active {
+            display: block;
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО СЛОЁВ ===== */
+        .layer-modal {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            display: none;
+        }
+
+        .layer-modal.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .layer-modal h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 6px;
+        }
+
+        .layer-modal label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #b0b8c4;
+            margin: 4px 0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .layer-modal label:hover {
+            color: #e0e0e0;
+        }
+
+        .layer-modal input[type="checkbox"] {
+            accent-color: #4fc3f7;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* ===== КОМАНДНЫЙ ЦЕНТР ===== */
+        .command-center {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(11, 14, 20, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 200px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            display: none;
+        }
+
+        .command-center.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .command-center h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .command-center .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .command-center .kpi-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: center;
+        }
+
+        .command-center .kpi-item .kpi-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+
+        .command-center .kpi-item .kpi-label {
+            font-size: 8px;
+            color: #8892a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .command-center .kpi-item .kpi-change {
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .command-center .kpi-item .kpi-change.up {
+            color: #4caf50;
+        }
+
+        .command-center .kpi-item .kpi-change.down {
+            color: #f44336;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 1024px) {
+            .top-bar .stats {
+                display: none;
+            }
+            .command-center {
+                top: 80px;
+                right: 10px;
+                min-width: 160px;
+            }
+            .command-center .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+            }
+            .command-center .kpi-item .kpi-value {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                top: 8px;
+                padding: 8px 12px;
+                gap: 8px;
+                width: 96%;
+            }
+            .top-bar .logo h1 {
+                font-size: 13px;
+            }
+            .top-bar .logo h1 span {
+                font-size: 9px;
+                padding: 1px 6px;
+            }
+            .top-bar .status {
+                padding-left: 8px;
+                font-size: 10px;
+            }
+            .lang-selector {
+                padding-left: 8px;
+            }
+            .lang-btn {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            .tool-panel {
+                left: 6px;
+                top: 70px;
+                transform: none;
+            }
+            .tool-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 13px;
+            }
+            .legend {
+                display: none;
+            }
+            .info-panel {
+                left: 8px;
+                bottom: 90px;
+                max-width: 180px;
+                padding: 10px 12px;
+            }
+            .info-panel .title {
+                font-size: 12px;
+            }
+            .layer-modal {
+                right: 8px;
+                top: 80px;
+                min-width: 140px;
+                padding: 10px 14px;
+            }
+            .time-controls {
+                bottom: 16px;
+                min-width: auto;
+                width: 94%;
+                padding: 10px 16px;
+            }
+            .time-controls .time-header .year-label {
+                font-size: 11px;
+            }
+            .time-controls .time-header .mode-btn {
+                font-size: 8px;
+                padding: 1px 8px;
+            }
+            .command-center {
+                top: 70px;
+                right: 8px;
+                min-width: 140px;
+                padding: 10px 12px;
+            }
+            .command-center .kpi-item .kpi-value {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top-bar .logo i {
+                font-size: 16px;
+            }
+            .top-bar .logo h1 {
+                font-size: 11px;
+            }
+            .top-bar .logo h1 span {
+                font-size: 8px;
+            }
+            .lang-btn {
+                font-size: 8px;
+                padding: 1px 4px;
+            }
+            .top-bar .status {
+                font-size: 8px;
+                padding-left: 4px;
+            }
+            .tool-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 10px;
+                border-radius: 8px;
+            }
+            .time-controls {
+                padding: 8px 12px;
+            }
+            .time-controls .time-header .year-label {
+                font-size: 9px;
+            }
+            .command-center .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .command-center .kpi-item {
+                padding: 4px 6px;
+            }
+            .command-center .kpi-item .kpi-value {
+                font-size: 10px;
+            }
+            .command-center .kpi-item .kpi-label {
+                font-size: 7px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== КАРТА ===== -->
+    <div id="map"></div>
+
+    <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
+    <div class="top-bar">
+        <div class="logo">
+            <i class="fas fa-cube"></i>
+            <h1>Niš Digital Twin <span>v2.0</span></h1>
+        </div>
+
+        <div class="status">
+            <span class="dot"></span>
+            <span data-lang="status">Online · Uživo</span>
+        </div>
+
+        <div class="lang-selector">
+            <button class="lang-btn active" data-lang="sr" onclick="switchLanguage('sr')">СР</button>
+            <button class="lang-btn" data-lang="en" onclick="switchLanguage('en')">EN</button>
+            <button class="lang-btn" data-lang="ru" onclick="switchLanguage('ru')">RU</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="number" id="statTemp">+23°C</div>
+                <div class="label" data-lang="temp">Температура</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="statAir">42</div>
+                <div class="label" data-lang="aqi">AQI</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="statTourists">1,240</div>
+                <div class="label" data-lang="tourists">Туристи данас</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="statIncidents">3</div>
+                <div class="label" style="color:#f44336;">⚠️ Инцидента</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== -->
+    <div class="tool-panel">
+        <button class="tool-btn" id="btnZoomIn" title="Приближи"><i class="fas fa-plus"></i></button>
+        <button class="tool-btn" id="btnZoomOut" title="Отдальи"><i class="fas fa-minus"></i></button>
+        <button class="tool-btn" id="btnLayers" title="Слојеви"><i class="fas fa-layer-group"></i></button>
+        <button class="tool-btn" id="btn3D" title="3D режим"><i class="fas fa-cubes"></i></button>
+        <button class="tool-btn" id="btnHeatmap" title="Топлотна мапа"><i class="fas fa-fire"></i></button>
+        <button class="tool-btn" id="btnCommand" title="Командни центар"><i class="fas fa-tv"></i></button>
+        <button class="tool-btn" id="btnReset" title="Ресет"><i class="fas fa-home"></i></button>
+        <button class="tool-btn" id="btnLocation" title="Моја локација"><i class="fas fa-location-dot"></i></button>
+    </div>
+
+    <!-- ===== ЛЕГЕНДА ===== -->
+    <div class="legend" id="legendPanel">
+        <h4><i class="fas fa-map-signs" style="margin-right:6px;color:#4fc3f7;"></i><span data-lang="legend">Легенда</span></h4>
+        <div class="legend-item"><span class="legend-color" style="background:#4CAF50;"></span> <span data-lang="legend_parks">Зелене површине</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#2196F3;"></span> <span data-lang="legend_water">Водени објекти</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#FF9800;"></span> <span data-lang="legend_heritage">Културно наслеђе</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#f44336;"></span> <span data-lang="legend_transport">Транспорт</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#9C27B0;"></span> <span data-lang="legend_infrastructure">Инфраструктура</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#00BCD4;"></span> <span data-lang="legend_sensors">Сензори</span></div>
+        <div class="legend-item"><span class="legend-color" style="background:#ff6b6b;"></span> <span>⚠️ Инциденти</span></div>
+    </div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО СЛОЁВ ===== -->
+    <div class="layer-modal" id="layerModal">
+        <h4><i class="fas fa-layer-group" style="margin-right:6px;color:#4fc3f7;"></i><span data-lang="layers_title">Слојеви</span></h4>
+        <label><input type="checkbox" checked data-layer="parks"> <span data-lang="layer_parks">Паркови</span></label>
+        <label><input type="checkbox" checked data-layer="water"> <span data-lang="layer_water">Вода</span></label>
+        <label><input type="checkbox" checked data-layer="heritage"> <span data-lang="layer_heritage">Наслеђе</span></label>
+        <label><input type="checkbox" checked data-layer="transport"> <span data-lang="layer_transport">Транспорт</span></label>
+        <label><input type="checkbox" checked data-layer="infrastructure"> <span data-lang="layer_infrastructure">Инфраструктура</span></label>
+        <label><input type="checkbox" checked data-layer="sensors"> <span data-lang="layer_sensors">Сензори</span></label>
+        <label><input type="checkbox" checked data-layer="buildings3d"> <span>🏢 3D зграде</span></label>
+        <label><input type="checkbox" checked data-layer="incidents"> <span>⚠️ Инциденти</span></label>
+        <label><input type="checkbox" checked data-layer="heatmap"> <span>🔥 Топлотна мапа</span></label>
+        <label><input type="checkbox" data-layer="satellite"> <span>🛰️ Сателит</span></label>
+    </div>
+
+    <!-- ===== КОМАНДНИЙ ЦЕНТР ===== -->
+    <div class="command-center" id="commandCenter">
+        <h4><i class="fas fa-tv" style="color:#4fc3f7;"></i> Командни центар</h4>
+        <div class="kpi-grid">
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiTemp">23°</div>
+                <div class="kpi-label">Температура</div>
+                <div class="kpi-change up">↑ 2°</div>
+            </div>
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiAQI">42</div>
+                <div class="kpi-label">AQI</div>
+                <div class="kpi-change up">↑ 5</div>
+            </div>
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiTraffic">87%</div>
+                <div class="kpi-label">Трафик</div>
+                <div class="kpi-change down">↓ 3%</div>
+            </div>
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiEnergy">142 MW</div>
+                <div class="kpi-label">Енергија</div>
+                <div class="kpi-change up">↑ 8%</div>
+            </div>
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiWater">76%</div>
+                <div class="kpi-label">Вода</div>
+                <div class="kpi-change down">↓ 2%</div>
+            </div>
+            <div class="kpi-item">
+                <div class="kpi-value" id="kpiIncidents">3</div>
+                <div class="kpi-label">Инциденти</div>
+                <div class="kpi-change down">↓ 1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ИНФО-ПАНЕЛЬ ===== -->
+    <div class="info-panel" id="infoPanel">
+        <div class="title" id="infoTitle">Нишка тврђава</div>
+        <div class="sub" id="infoSub">🏛️ Културно наслеђе · XVIII век</div>
+        <div class="detail" id="infoDetail">
+            <i class="fas fa-map-pin"></i> <span id="infoCoords">43.3191°N, 21.8956°E</span><br>
+            <i class="fas fa-users"></i> <span data-lang="info_visitors">Посета</span>: <span id="infoVisitors">45,000</span>/<span data-lang="info_year">год</span><br>
+            <i class="fas fa-star" style="color:#FFD700;"></i> <span data-lang="info_rating">Оцена</span>: <span id="infoRating">4.8</span>
+        </div>
+        <div class="tabs">
+            <button class="active" data-tab="info" onclick="switchTab('info')">ℹ️ Инфо</button>
+            <button data-tab="data" onclick="switchTab('data')">📊 Подаци</button>
+        </div>
+        <div class="tab-content active" id="tabInfo">
+            <div style="font-size:11px; color:#8892a0; margin-top:4px;">
+                <i class="fas fa-clock"></i> Последња ажурирања: <span id="lastUpdate">пре 2 мин</span>
+            </div>
+        </div>
+        <div class="tab-content" id="tabData">
+            <canvas id="miniChart" style="width:100%; height:60px; margin-top:4px;"></canvas>
+            <div style="font-size:9px; color:#667; text-align:center; margin-top:2px;">AQI последњих 24h</div>
+        </div>
+    </div>
+
+    <!-- ===== ВРЕМЕНСКА ШКАЛА ===== -->
+    <div class="time-controls" id="timeControls">
+        <div class="time-header">
+            <span class="year-label" id="yearLabel">2024</span>
+            <div class="mode-buttons">
+                <button class="mode-btn active" data-mode="now" onclick="setTimeMode('now')">📡 Сада</button>
+                <button class="mode-btn" data-mode="history" onclick="setTimeMode('history')">📜 Историја</button>
+                <button class="mode-btn" data-mode="forecast" onclick="setTimeMode('forecast')">🔮 Прогноз</button>
+            </div>
+        </div>
+        <input type="range" id="timeSlider" min="2010" max="2030" value="2024" step="1">
+        <div class="time-labels">
+            <span>2010</span>
+            <span>2015</span>
+            <span>2020</span>
+            <span>2024</span>
+            <span>2030</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== СКРИПТ ===== -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // 1. ПЕРЕВОДЫ
+        // ============================================================
+        const translations = {
+            sr: { status: 'Online · Uživo', temp: 'Температура', aqi: 'AQI', tourists: 'Туристи данас',
+                legend: 'Легенда', legend_parks: 'Зелене површине', legend_water: 'Водени објекти',
+                legend_heritage: 'Културно наслеђе', legend_transport: 'Транспорт',
+                legend_infrastructure: 'Инфраструктура', legend_sensors: 'Сензори', layers_title: 'Слојеви',
+                layer_parks: 'Паркови', layer_water: 'Вода', layer_heritage: 'Наслеђе', layer_transport: 'Транспорт',
+                layer_infrastructure: 'Инфраструктура', layer_sensors: 'Сензори', info_visitors: 'Посета',
+                info_year: 'год', info_rating: 'Оцена', heritage_fortress: 'Тврђава', heritage_monument: 'Споменик',
+                heritage_archaeology: 'Археологија', heritage_memorial: 'Меморијал',
+                heritage_district: 'Историјски кварт', period_18th: 'XVIII век', period_19th: 'XIX век',
+                period_roman: 'Римско царство', period_ww2: 'Други светски рат', hospital: 'Болница',
+                education: 'Образовање', commerce: 'Трговина', transport: 'Транспорт', park: 'Парк', river: 'Река',
+                highway: 'Аутопут', road: 'Улица', sensor_air: 'Сензор ваздуха'
+            },
+            en: { status: 'Online · Live', temp: 'Temperature', aqi: 'AQI', tourists: 'Tourists today',
+                legend: 'Legend', legend_parks: 'Green areas', legend_water: 'Water bodies',
+                legend_heritage: 'Cultural heritage', legend_transport: 'Transport',
+                legend_infrastructure: 'Infrastructure', legend_sensors: 'Sensors', layers_title: 'Layers',
+                layer_parks: 'Parks', layer_water: 'Water', layer_heritage: 'Heritage', layer_transport: 'Transport',
+                layer_infrastructure: 'Infrastructure', layer_sensors: 'Sensors', info_visitors: 'Visitors',
+                info_year: 'year', info_rating: 'Rating', heritage_fortress: 'Fortress',
+                heritage_monument: 'Monument', heritage_archaeology: 'Archaeology', heritage_memorial: 'Memorial',
+                heritage_district: 'Historic district', period_18th: '18th century', period_19th: '19th century',
+                period_roman: 'Roman Empire', period_ww2: 'World War II', hospital: 'Hospital',
+                education: 'Education', commerce: 'Commerce', transport: 'Transport', park: 'Park', river: 'River',
+                highway: 'Highway', road: 'Street', sensor_air: 'Air sensor'
+            },
+            ru: { status: 'Online · В прямом эфире', temp: 'Температура', aqi: 'AQI', tourists: 'Туристов сегодня',
+                legend: 'Легенда', legend_parks: 'Зелёные зоны', legend_water: 'Водные объекты',
+                legend_heritage: 'Культурное наследие', legend_transport: 'Транспорт',
+                legend_infrastructure: 'Инфраструктура', legend_sensors: 'Сенсоры', layers_title: 'Слои',
+                layer_parks: 'Парки', layer_water: 'Вода', layer_heritage: 'Наследие', layer_transport: 'Транспорт',
+                layer_infrastructure: 'Инфраструктура', layer_sensors: 'Сенсоры', info_visitors: 'Посещаемость',
+                info_year: 'год', info_rating: 'Рейтинг', heritage_fortress: 'Крепость',
+                heritage_monument: 'Памятник', heritage_archaeology: 'Археология', heritage_memorial: 'Мемориал',
+                heritage_district: 'Исторический квартал', period_18th: 'XVIII век', period_19th: 'XIX век',
+                period_roman: 'Римская империя', period_ww2: 'Вторая мировая война', hospital: 'Больница',
+                education: 'Образование', commerce: 'Торговля', transport: 'Транспорт', park: 'Парк', river: 'Река',
+                highway: 'Автомагистраль', road: 'Улица', sensor_air: 'Датчик воздуха'
+            }
+        };
+
+        let currentLang = 'sr';
+        let currentTimeMode = 'now';
+        let currentYear = 2024;
+        let miniChart = null;
+
+        function translate(key) {
+            return translations[currentLang]?.[key] || key;
+        }
+
+        function updateTranslations() {
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                const key = el.dataset.lang;
+                const translation = translate(key);
+                if (translation && el.children.length === 0) {
+                    el.textContent = translation;
+                }
+            });
+        }
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            updateTranslations();
+            document.title = {
+                sr: 'Niš Digital Twin — Вишејезична платформа',
+                en: 'Niš Digital Twin — Multilingual Platform',
+                ru: 'Niš Digital Twin — Многоязычная платформа'
+            } [lang] || 'Niš Digital Twin';
+        }
+
+        window.switchLanguage = switchLanguage;
+
+        // ============================================================
+        // 2. КАРТА
+        // ============================================================
+        const map = L.map('map', {
+            center: [43.3191, 21.8956],
+            zoom: 14,
+            zoomControl: false,
+            attributionControl: true
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 19,
+            minZoom: 10
+        }).addTo(map);
+
+        // Сателитский слой (скрыт по умолчанию)
+        const satelliteLayer = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri'
+            });
+
+        // ============================================================
+        // 3. ДАННЫЕ
+        // ============================================================
+        const data = {
+            parks: [
+                { name: { sr: 'Парк Св. Саве', en: 'St. Sava Park', ru: 'Парк Св. Саввы' }, coords: [43.3280, 21.8990],
+                    color: '#4CAF50', type: 'park' },
+                { name: { sr: 'Парк Чаир', en: 'Čair Park', ru: 'Парк Чайр' }, coords: [43.3420, 21.9025],
+                    color: '#4CAF50', type: 'park' },
+                { name: { sr: 'Бубањ', en: 'Bubanj', ru: 'Бубань' }, coords: [43.3500, 21.9350], color: '#4CAF50',
+                    type: 'park' },
+                { name: { sr: 'Парк Медијана', en: 'Mediana Park', ru: 'Парк Медиана' }, coords: [43.3000, 21.8800],
+                    color: '#4CAF50', type: 'park' },
+            ],
+            heritage: [
+                { name: { sr: 'Нишка тврђава', en: 'Niš Fortress', ru: 'Нишская крепость' }, coords: [43.3191, 21.8956],
+                    color: '#FF9800', type: 'fortress', period: 'period_18th' },
+                { name: { sr: 'Ћеле-Кула', en: 'Skull Tower', ru: 'Челе-Кула' }, coords: [43.3356, 21.9123],
+                    color: '#FF9800', type: 'monument', period: 'period_19th' },
+                { name: { sr: 'Медијана', en: 'Mediana', ru: 'Медиана' }, coords: [43.2905, 21.8754], color: '#FF9800',
+                    type: 'archaeology', period: 'period_roman' },
+                { name: { sr: 'Логор Црвени крст', en: 'Red Cross Camp', ru: 'Лагерь Красный крест' },
+                    coords: [43.3400, 21.9200], color: '#FF9800', type: 'memorial', period: 'period_ww2' },
+                { name: { sr: 'Казанџијско сокаче', en: 'Kazandžijsko Sokače', ru: 'Казанджийско сокаче' },
+                    coords: [43.3170, 21.8970], color: '#FF9800', type: 'historic_district', period: 'period_19th' },
+            ],
+            infrastructure: [
+                { name: { sr: 'Клинички центар', en: 'Clinical Center', ru: 'Клинический центр' }, coords: [43.3300,
+                        21.8900
+                    ], color: '#9C27B0', type: 'hospital' },
+                { name: { sr: 'Универзитет у Нишу', en: 'University of Niš', ru: 'Университет Ниша' },
+                    coords: [43.3250, 21.9050], color: '#9C27B0', type: 'education' },
+                { name: { sr: 'ТЦ Форум', en: 'Forum Mall', ru: 'ТЦ Форум' }, coords: [43.3350, 21.8850],
+                    color: '#9C27B0', type: 'commerce' },
+                { name: { sr: 'Железничка станица', en: 'Railway Station', ru: 'ЖД вокзал' }, coords: [43.3150,
+                        21.8800
+                    ], color: '#9C27B0', type: 'transport_infra' },
+            ],
+            sensors: [
+                { name: { sr: 'Сензор А1', en: 'Sensor A1', ru: 'Сенсор А1' }, coords: [43.3200, 21.8950],
+                    color: '#00BCD4', type: 'air', pm25: 42, pm10: 55 },
+                { name: { sr: 'Сензор А2', en: 'Sensor A2', ru: 'Сенсор А2' }, coords: [43.3300, 21.9100],
+                    color: '#00BCD4', type: 'air', pm25: 38, pm10: 48 },
+                { name: { sr: 'Сензор А3', en: 'Sensor A3', ru: 'Сенсор А3' }, coords: [43.3050, 21.8800],
+                    color: '#00BCD4', type: 'air', pm25: 45, pm10: 60 },
+                { name: { sr: 'Сензор А4', en: 'Sensor A4', ru: 'Сенсор А4' }, coords: [43.3400, 21.9000],
+                    color: '#00BCD4', type: 'air', pm25: 35, pm10: 42 },
+                { name: { sr: 'Сензор А5', en: 'Sensor A5', ru: 'Сенсор А5' }, coords: [43.3150, 21.9200],
+                    color: '#00BCD4', type: 'air', pm25: 40, pm10: 52 },
+            ],
+            transport: [
+                { name: { sr: 'Коридор Е75', en: 'Corridor E75', ru: 'Коридор Е75' }, coords: [
+                        [43.3100, 21.8700],
+                        [43.3191, 21.8956],
+                        [43.3280, 21.9200]
+                    ], color: '#f44336', type: 'highway' },
+                { name: { sr: 'Бул. Цара Душана', en: 'Tsar Dušan Blvd', ru: 'Бул. Цара Душана' }, coords: [
+                        [43.3000, 21.8800],
+                        [43.3191, 21.8956],
+                        [43.3350, 21.9100]
+                    ], color: '#f44336', type: 'road' },
+                { name: { sr: 'Ул. Николе Пашића', en: 'Nikola Pašić St.', ru: 'Ул. Николы Пашича' }, coords: [
+                        [43.3250, 21.8850],
+                        [43.3191, 21.8956],
+                        [43.3100, 21.9050]
+                    ], color: '#f44336', type: 'road' },
+            ],
+            water: [
+                { name: { sr: 'Нишава', en: 'Nišava', ru: 'Нишава' }, coords: [
+                        [43.3100, 21.8700],
+                        [43.3191, 21.8956],
+                        [43.3250, 21.9100],
+                        [43.3300, 21.9300]
+                    ], color: '#2196F3', type: 'river' }
+            ],
+            buildings3d: [
+                { coords: [43.3191, 21.8956], height: 15, floors: 5, color: '#4CAF50', type: 'residential' },
+                { coords: [43.3210, 21.8970], height: 25, floors: 8, color: '#FF9800', type: 'commercial' },
+                { coords: [43.3180, 21.8930], height: 10, floors: 3, color: '#2196F3', type: 'public' },
+                { coords: [43.3220, 21.8990], height: 35, floors: 12, color: '#9C27B0', type: 'office' },
+                { coords: [43.3170, 21.8980], height: 8, floors: 2, color: '#4CAF50', type: 'residential' },
+                { coords: [43.3200, 21.9000], height: 45, floors: 15, color: '#f44336', type: 'commercial' },
+                { coords: [43.3230, 21.8950], height: 20, floors: 6, color: '#FF9800', type: 'residential' },
+                { coords: [43.3160, 21.8940], height: 30, floors: 10, color: '#9C27B0', type: 'office' },
+            ],
+            incidents: [
+                { name: 'Рупа на путу', coords: [43.3250, 21.9000], status: 'У току', time: 'пре 15 мин', type: 'road' },
+                { name: 'Квар на водоводу', coords: [43.3150, 21.8900], status: 'Пријављено', time: 'пре 45 мин',
+                    type: 'water' },
+                { name: 'ДТП', coords: [43.3300, 21.9050], status: 'Решава се', time: 'пре 1 сат', type: 'accident' },
+                { name: 'Мусор у парку', coords: [43.3280, 21.8990], status: 'Заказано', time: 'пре 2 сата', type: 'waste' },
+            ]
+        };
+
+        // ============================================================
+        // 4. СОЗДАНИЕ СЛОЁВ
+        // ============================================================
+        const layerGroups = {};
+        let heatLayer = null;
+        let buildings3dGroup = null;
+        let incidentsGroup = null;
+        let buildings3dMarkers = [];
+
+        function getLocalized(obj) {
+            if (!obj) return '';
+            if (typeof obj === 'string') return obj;
+            return obj[currentLang] || obj.sr || obj.en || JSON.stringify(obj);
+        }
+
+        function getType(typeKey) {
+            const map = {
+                'fortress': 'heritage_fortress',
+                'monument': 'heritage_monument',
+                'archaeology': 'heritage_archaeology',
+                'memorial': 'heritage_memorial',
+                'historic_district': 'heritage_district',
+                'hospital': 'hospital',
+                'education': 'education',
+                'commerce': 'commerce',
+                'transport_infra': 'transport',
+                'park': 'park',
+                'river': 'river',
+                'highway': 'highway',
+                'road': 'road',
+                'air': 'sensor_air'
+            };
+            return translate(map[typeKey] || typeKey);
+        }
+
+        // === Маркеры ===
+        function createMarker(item, group) {
+            const popupContent = `
+                <div style="font-family:'Segoe UI',sans-serif;max-width:220px;color:#0b0e14;">
+                    <h4 style="margin:0 0 2px 0;">${getLocalized(item.name)}</h4>
+                    <div style="font-size:11px;color:#666;">${getType(item.type)}${item.period ? ' · ' + translate(item.period) : ''}</div>
+                    ${item.pm25 ? `<div style="font-size:11px;color:#888;">PM2.5: ${item.pm25} · PM10: ${item.pm10}</div>` : ''}
+                    <div style="font-size:10px;color:#999;margin-top:3px;">${item.coords[0].toFixed(4)}°N, ${item.coords[1].toFixed(4)}°E</div>
+                </div>
+            `;
+
+            const marker = L.circleMarker(item.coords, {
+                radius: item.type === 'air' ? 12 : 10,
+                fillColor: item.color || '#4fc3f7',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
+
+            if (item.type === 'air') {
+                marker.setStyle({ className: 'pulsing-marker' });
+                marker._icon && (marker._icon.style.animation = 'pulse 2s infinite');
+            }
+
+            marker.bindPopup(popupContent);
+            marker.on('click', function() { showInfoPanel(item); });
+            group.addLayer(marker);
+            return marker;
+        }
+
+        // === Линии ===
+        function createLine(item, group) {
+            const popupContent = `
+                <div style="font-family:'Segoe UI',sans-serif;color:#0b0e14;">
+                    <h4 style="margin:0;">${getLocalized(item.name)}</h4>
+                    <div style="font-size:11px;color:#666;">${getType(item.type)}</div>
+                </div>
+            `;
+
+            const line = L.polyline(item.coords, {
+                color: item.color || '#f44336',
+                weight: 4,
+                opacity: 0.8,
+                smoothFactor: 1
+            }).bindPopup(popupContent);
+
+            group.addLayer(line);
+            return line;
+        }
+
+        // === 3D здания (симуляция через полигоны) ===
+        function create3DBuilding(item, group) {
+            const color = item.color || '#4CAF50';
+            const height = item.height || 10;
+            const floors = item.floors || 3;
+            const size = 0.003 + (height / 10000);
+
+            const bounds = [
+                [item.coords[0] - size, item.coords[1] - size],
+                [item.coords[0] + size, item.coords[1] + size]
+            ];
+
+            // Рисуем прямоугольник с эффектом 3D
+            const polygon = L.rectangle(bounds, {
+                color: color,
+                weight: 2,
+                fillColor: color,
+                fillOpacity: 0.7,
+                opacity: 0.9,
+                className: 'building-3d'
+            });
+
+            // Добавляем тень/эффект высоты через стиль
+            const heightColor = height > 30 ? '#f44336' : height > 20 ? '#FF9800' : '#4CAF50';
+            polygon.setStyle({
+                fillColor: heightColor,
+                fillOpacity: 0.6 + (height / 100)
+            });
+
+            const popupContent = `
+                <div style="font-family:'Segoe UI',sans-serif;color:#0b0e14;">
+                    <h4 style="margin:0;">🏢 ${item.type || 'Зграда'}</h4>
+                    <div style="font-size:11px;color:#666;">Висина: ${height}m · Спратова: ${floors}</div>
+                    <div style="font-size:11px;color:#666;">Тип: ${item.type || 'мешовито'}</div>
+                </div>
+            `;
+
+            polygon.bindPopup(popupContent);
+            polygon.on('click', function() {
+                showInfoPanel({
+                    name: { sr: `Зграда (${floors} спратова)`, en: `Building (${floors} floors)`,
+                    ru: `Здание (${floors} этажей)` },
+                    coords: item.coords,
+                    type: 'building',
+                    height: height,
+                    floors: floors
+                });
+            });
+
+            polygon.on('mouseover', function() {
+                this.setStyle({ fillOpacity: 0.9, weight: 3 });
+            });
+            polygon.on('mouseout', function() {
+                this.setStyle({ fillOpacity: 0.6 + (height / 100), weight: 2 });
+            });
+
+            group.addLayer(polygon);
+            buildings3dMarkers.push(polygon);
+            return polygon;
+        }
+
+        // === Инциденты ===
+        function createIncident(item, group) {
+            const statusColors = {
+                'У току': '#ff6b6b',
+                'Пријављено': '#ffd93d',
+                'Решава се': '#6bcb77',
+                'Заказано': '#4d96ff'
+            };
+
+            const color = statusColors[item.status] || '#ff6b6b';
+
+            const marker = L.circleMarker(item.coords, {
+                radius: 14,
+                fillColor: color,
+                color: '#fff',
+                weight: 3,
+                fillOpacity: 0.9,
+                className: 'incident-marker'
+            });
+
+            const popupContent = `
+                <div style="font-family:'Segoe UI',sans-serif;color:#0b0e14;max-width:200px;">
+                    <h4 style="margin:0;color:#f44336;">⚠️ ${item.name}</h4>
+                    <div style="font-size:11px;color:#666;">Статус: ${item.status}</div>
+                    <div style="font-size:11px;color:#666;">Време: ${item.time}</div>
+                    <div style="font-size:10px;color:#999;">${item.coords[0].toFixed(4)}°N, ${item.coords[1].toFixed(4)}°E</div>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent);
+            marker.on('click', function() {
+                showInfoPanel({
+                    name: { sr: `⚠️ ${item.name}`, en: `⚠️ ${item.name}`, ru: `⚠️ ${item.name}` },
+                    coords: item.coords,
+                    type: 'incident',
+                    status: item.status,
+                    time: item.time
+                });
+            });
+
+            group.addLayer(marker);
+            return marker;
+        }
+
+        // === Тепловая карта ===
+        function createHeatmap() {
+            // Генерируем точки для тепловой карты (население)
+            const points = [];
+            const center = [43.3191, 21.8956];
+
+            for (let i = 0; i < 200; i++) {
+                const lat = center[0] + (Math.random() - 0.5) * 0.06;
+                const lng = center[1] + (Math.random() - 0.5) * 0.06;
+                const intensity = Math.random() * 0.8 + 0.2;
+                points.push([lat, lng, intensity]);
+            }
+
+            // Добавляем несколько "горячих" точек (центр города)
+            for (let i = 0; i < 30; i++) {
+                const lat = center[0] + (Math.random() - 0.5) * 0.02;
+                const lng = center[1] + (Math.random() - 0.5) * 0.02;
+                const intensity = Math.random() * 0.5 + 0.8;
+                points.push([lat, lng, intensity]);
+            }
+
+            heatLayer = L.heatLayer(points, {
+                radius: 20,
+                blur: 15,
+                maxZoom: 17,
+                gradient: {
+                    0.2: '#2196F3',
+                    0.4: '#4CAF50',
+                    0.6: '#FFEB3B',
+                    0.8: '#FF9800',
+                    1.0: '#f44336'
+                }
+            });
+
+            return heatLayer;
+        }
+
+        // ============================================================
+        // 5. ИНИЦИАЛИЗАЦИЯ ВСЕХ СЛОЁВ
+        // ============================================================
+        function initAllLayers() {
+            // Парки
+            const parksGroup = L.layerGroup().addTo(map);
+            data.parks.forEach(item => createMarker(item, parksGroup));
+            layerGroups.parks = parksGroup;
+
+            // Вода
+            const waterGroup = L.layerGroup().addTo(map);
+            data.water.forEach(item => createLine(item, waterGroup));
+            layerGroups.water = waterGroup;
+
+            // Наследие
+            const heritageGroup = L.layerGroup().addTo(map);
+            data.heritage.forEach(item => createMarker(item, heritageGroup));
+            layerGroups.heritage = heritageGroup;
+
+            // Инфраструктура
+            const infraGroup = L.layerGroup().addTo(map);
+            data.infrastructure.forEach(item => createMarker(item, infraGroup));
+            layerGroups.infrastructure = infraGroup;
+
+            // Сенсоры
+            const sensorsGroup = L.layerGroup().addTo(map);
+            data.sensors.forEach(item => createMarker(item, sensorsGroup));
+            layerGroups.sensors = sensorsGroup;
+
+            // Транспорт
+            const transportGroup = L.layerGroup().addTo(map);
+            data.transport.forEach(item => createLine(item, transportGroup));
+            layerGroups.transport = transportGroup;
+
+            // 3D здания
+            buildings3dGroup = L.layerGroup().addTo(map);
+            data.buildings3d.forEach(item => create3DBuilding(item, buildings3dGroup));
+            layerGroups.buildings3d = buildings3dGroup;
+
+            // Инциденты
+            incidentsGroup = L.layerGroup().addTo(map);
+            data.incidents.forEach(item => createIncident(item, incidentsGroup));
+            layerGroups.incidents = incidentsGroup;
+
+            // Тепловая карта (добавляем позже по кнопке)
+            const heat = createHeatmap();
+            layerGroups.heatmap = heat;
+            // Не добавляем на карту по умолчанию
+        }
+
+        initAllLayers();
+
+        // ============================================================
+        // 6. ИНФО-ПАНЕЛЬ
+        // ============================================================
+        let currentInfoItem = null;
+
+        function showInfoPanel(item) {
+            const panel = document.getElementById('infoPanel');
+            currentInfoItem = item;
+
+            const name = getLocalized(item.name);
+            document.getElementById('infoTitle').textContent = name;
+
+            let subText = '';
+            if (item.type === 'incident') {
+                subText = `⚠️ ${item.status || 'Активно'} · ${item.time || 'сада'}`;
+            } else if (item.type === 'building') {
+                subText = `🏢 ${item.floors || '?'} спратова · ${item.height || '?'}m`;
+            } else {
+                subText = '🏷️ ' + getType(item.type) + (item.period ? ' · ' + translate(item.period) : '');
+            }
+            document.getElementById('infoSub').textContent = subText;
+
+            let detailHtml =
+                `<i class="fas fa-map-pin"></i> ${item.coords[0].toFixed(4)}°N, ${item.coords[1].toFixed(4)}°E<br>`;
+
+            if (item.pm25) {
+                detailHtml +=
+                    `<i class="fas fa-wind"></i> PM2.5: ${item.pm25} μg/m³ · PM10: ${item.pm10} μg/m³<br>`;
+            }
+
+            if (item.type === 'fortress' || item.type === 'monument' ||
+                item.type === 'archaeology' || item.type === 'memorial' ||
+                item.type === 'historic_district') {
+                const visitors = Math.floor(Math.random() * 20000 + 10000);
+                const rating = (4 + Math.random() * 0.9).toFixed(1);
+                detailHtml +=
+                    `<i class="fas fa-users"></i> ${translate('info_visitors')}: ${visitors.toLocaleString()}/${translate('info_year')}<br>`;
+                detailHtml +=
+                    `<i class="fas fa-star" style="color:#FFD700;"></i> ${translate('info_rating')}: ${rating}`;
+                document.getElementById('infoVisitors').textContent = visitors.toLocaleString();
+                document.getElementById('infoRating').textContent = rating;
+            }
+
+            if (item.type === 'hospital') {
+                detailHtml +=
+                    `<i class="fas fa-bed"></i> 450 ${translate('info_visitors')} · <i class="fas fa-ambulance"></i> 24/7`;
+            }
+            if (item.type === 'education') {
+                detailHtml += `<i class="fas fa-user-graduate"></i> 30,000 ${translate('info_visitors')}`;
+            }
+            if (item.type === 'incident') {
+                detailHtml += `<i class="fas fa-clock"></i> Пријављено: ${item.time || 'сада'}<br>`;
+                detailHtml += `<i class="fas fa-tasks"></i> Статус: ${item.status || 'Активно'}`;
+            }
+            if (item.type === 'building') {
+                detailHtml += `<i class="fas fa-ruler-vertical"></i> Висина: ${item.height || '?'}m<br>`;
+                detailHtml += `<i class="fas fa-layer-group"></i> Спратова: ${item.floors || '?'}`;
+            }
+
+            document.getElementById('infoDetail').innerHTML = detailHtml;
+            document.getElementById('infoCoords').textContent =
+                `${item.coords[0].toFixed(4)}°N, ${item.coords[1].toFixed(4)}°E`;
+
+            panel.classList.add('visible');
+
+            // Обновляем мини-график
+            updateMiniChart();
+        }
+
+        // ============================================================
+        // 7. МИНИ-ГРАФИК
+        // ============================================================
+        function updateMiniChart() {
+            const ctx = document.getElementById('miniChart').getContext('2d');
+
+            const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            const data = Array.from({ length: 24 }, () => Math.floor(20 + Math.random() * 60));
+
+            if (miniChart) {
+                miniChart.destroy();
+            }
+
+            miniChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(79,195,247,0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, min: 0, max: 100 }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // 8. ВКЛАДКИ В ИНФО-ПАНЕЛИ
+        // ============================================================
+        function switchTab(tab) {
+            document.querySelectorAll('.info-panel .tabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            document.querySelectorAll('.info-panel .tab-content').forEach(el => {
+                el.classList.toggle('active', el.id === 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            });
+        }
+
+        window.switchTab = switchTab;
+
+        // ============================================================
+        // 9. ВРЕМЕННАЯ ШКАЛА
+        // ============================================================
+        const timeSlider = document.getElementById('timeSlider');
+        const yearLabel = document.getElementById('yearLabel');
+
+        timeSlider.addEventListener('input', function() {
+            currentYear = parseInt(this.value);
+            yearLabel.textContent = currentYear;
+            updateBuildingsByYear(currentYear);
+            updateDataByYear(currentYear);
+        });
+
+        function setTimeMode(mode) {
+            currentTimeMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            // Меняем внешний вид слайдера
+            if (mode === 'now') {
+                timeSlider.value = 2024;
+                yearLabel.textContent = '2024';
+                document.getElementById('timeControls').style.borderColor = 'rgba(79,195,247,0.3)';
+            } else if (mode === 'history') {
+                timeSlider.value = 2015;
+                yearLabel.textContent = '2015';
+                document.getElementById('timeControls').style.borderColor = 'rgba(255,152,0,0.3)';
+            } else if (mode === 'forecast') {
+                timeSlider.value = 2028;
+                yearLabel.textContent = '2028';
+                document.getElementById('timeControls').style.borderColor = 'rgba(244,67,54,0.3)';
+            }
+
+            updateBuildingsByYear(parseInt(timeSlider.value));
+            updateDataByYear(parseInt(timeSlider.value));
+        }
+
+        window.setTimeMode = setTimeMode;
+
+        function updateBuildingsByYear(year) {
+            // Меняем цвет и высоту зданий в зависимости от года
+            const factor = (year - 2010) / 20; // 0..1
+
+            buildings3dMarkers.forEach((polygon, index) => {
+                const baseHeight = data.buildings3d[index % data.buildings3d.length].height || 10;
+                const newHeight = baseHeight * (0.5 + factor * 0.5);
+
+                // Меняем цвет в зависимости от "возраста"
+                const color = factor < 0.3 ? '#4CAF50' :
+                    factor < 0.6 ? '#FF9800' :
+                    '#f44336';
+
+                polygon.setStyle({
+                    fillColor: color,
+                    fillOpacity: 0.5 + factor * 0.4,
+                    weight: 1 + factor * 3
+                });
+
+                // Меняем размер
+                const size = 0.002 + (newHeight / 8000);
+                const center = data.buildings3d[index % data.buildings3d.length].coords;
+                polygon.setBounds([
+                    [center[0] - size, center[1] - size],
+                    [center[0] + size, center[1] + size]
+                ]);
+            });
+        }
+
+        function updateDataByYear(year) {
+            // Обновляем статистику в зависимости от года
+            const factor = (year - 2010) / 20;
+
+            const temp = (20 + factor * 4 + Math.random() * 2).toFixed(1);
+            document.getElementById('statTemp').textContent = '+' + temp + '°C';
+
+            const aqi = Math.floor(30 + factor * 30 + Math.random() * 15);
+            document.getElementById('statAir').textContent = aqi;
+
+            const tourists = Math.floor(800 + factor * 1200 + Math.random() * 400);
+            document.getElementById('statTourists').textContent = tourists.toLocaleString();
+
+            const incidents = Math.max(1, Math.floor(5 - factor * 3 + Math.random() * 2));
+            document.getElementById('statIncidents').textContent = incidents;
+
+            // Обновляем KPI
+            document.getElementById('kpiTemp').textContent = '+' + temp + '°';
+            document.getElementById('kpiAQI').textContent = aqi;
+            document.getElementById('kpiEnergy').textContent = Math.floor(100 + factor * 80 + Math.random() * 20) + ' MW';
+            document.getElementById('kpiWater').textContent = Math.floor(60 + factor * 30 + Math.random() * 10) + '%';
+            document.getElementById('kpiIncidents').textContent = incidents;
+        }
+
+        // ============================================================
+        // 10. КОНТРОЛЫ
+        // ============================================================
+        document.getElementById('btnZoomIn').addEventListener('click', () => map.zoomIn());
+        document.getElementById('btnZoomOut').addEventListener('click', () => map.zoomOut());
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            map.flyTo([43.3191, 21.8956], 14);
+            document.getElementById('infoPanel').classList.remove('visible');
+            setTimeMode('now');
+        });
+
+        document.getElementById('btnLocation').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        map.flyTo([lat, lon], 16);
+
+                        if (window.locationMarker) {
+                            map.removeLayer(window.locationMarker);
+                        }
+                        window.locationMarker = L.circleMarker([lat, lon], {
+                            radius: 8,
+                            fillColor: '#4fc3f7',
+                            color: '#fff',
+                            weight: 3,
+                            fillOpacity: 0.9
+                        }).addTo(map).bindPopup('📍 Ваше местоположение').openPopup();
+                    },
+                    () => alert('Не удалось определить местоположение'),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                alert('GPS не поддерживается');
+            }
+        });
+
+        // Слои
+        document.getElementById('btnLayers').addEventListener('click', function() {
+            const modal = document.getElementById('layerModal');
+            modal.classList.toggle('visible');
+            this.classList.toggle('active');
+        });
+
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('layerModal');
+            const btn = document.getElementById('btnLayers');
+            if (!modal.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                modal.classList.remove('visible');
+                btn.classList.remove('active');
+            }
+        });
+
+        // 3D режим
+        document.getElementById('btn3D').addEventListener('click', function() {
+            this.classList.toggle('active');
+            const is3D = this.classList.contains('active');
+            if (is3D) {
+                map.setZoom(16);
+                map.setView([43.3191, 21.8956]);
+                // Показываем 3D здания с анимацией
+                buildings3dMarkers.forEach((p, i) => {
+                    setTimeout(() => {
+                        p.setStyle({ fillOpacity: 0.9, weight: 4 });
+                        setTimeout(() => {
+                            p.setStyle({ fillOpacity: 0.6 + (data.buildings3d[i % data
+                                .buildings3d.length].height / 100), weight: 2 });
+                        }, 300);
+                    }, i * 100);
+                });
+            } else {
+                map.setZoom(14);
+            }
+        });
+
+        // Тепловая карта
+        let heatmapVisible = false;
+        document.getElementById('btnHeatmap').addEventListener('click', function() {
+            this.classList.toggle('active');
+            heatmapVisible = this.classList.contains('active');
+
+            if (heatmapVisible && layerGroups.heatmap) {
+                map.addLayer(layerGroups.heatmap);
+            } else if (layerGroups.heatmap) {
+                map.removeLayer(layerGroups.heatmap);
+            }
+        });
+
+        // Командный центр
+        document.getElementById('btnCommand').addEventListener('click', function() {
+            const center = document.getElementById('commandCenter');
+            center.classList.toggle('visible');
+            this.classList.toggle('active');
+
+            if (center.classList.contains('visible')) {
+                // Обновляем KPI
+                updateDataByYear(currentYear);
+            }
+        });
+
+        // Чекбоксы слоёв
+        document.querySelectorAll('#layerModal input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const layerName = this.dataset.layer;
+
+                if (layerName === 'satellite') {
+                    if (this.checked) {
+                        map.addLayer(satelliteLayer);
+                    } else {
+                        map.removeLayer(satelliteLayer);
+                    }
+                    return;
+                }
+
+                if (layerGroups[layerName]) {
+                    if (this.checked) {
+                        map.addLayer(layerGroups[layerName]);
+                    } else {
+                        map.removeLayer(layerGroups[layerName]);
+                    }
+                }
+            });
+        });
+
+        // Клик на карту — скрыть инфо-панель
+        map.on('click', function() {
+            document.getElementById('infoPanel').classList.remove('visible');
+        });
+
+        // ============================================================
+        // 11. СТАТИСТИКА (реальное время)
+        // ============================================================
+        setInterval(() => {
+            if (currentTimeMode === 'now') {
+                const temp = (20 + Math.random() * 6).toFixed(1);
+                document.getElementById('statTemp').textContent = '+' + temp + '°C';
+                document.getElementById('kpiTemp').textContent = '+' + temp + '°';
+
+                const aqi = Math.floor(30 + Math.random() * 25);
+                document.getElementById('statAir').textContent = aqi;
+                document.getElementById('kpiAQI').textContent = aqi;
+
+                const tourists = Math.floor(800 + Math.random() * 800);
+                document.getElementById('statTourists').textContent = tourists.toLocaleString();
+
+                const incidents = Math.floor(1 + Math.random() * 4);
+                document.getElementById('statIncidents').textContent = incidents;
+
+                // Обновляем мини-график каждые 30 секунд
+                if (Math.random() > 0.7) {
+                    updateMiniChart();
+                }
+            }
+
+            // Обновляем время последнего обновления
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent =
+                `пре ${Math.floor(Math.random() * 5 + 1)} мин`;
+        }, 3000);
+
+        // ============================================================
+        // 12. ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+        updateTranslations();
+        updateMiniChart();
+
+        // Показываем приветственное сообщение
+        setTimeout(() => {
+            const panel = document.getElementById('infoPanel');
+            panel.classList.add('visible');
+            document.getElementById('infoTitle').textContent = '🏙️ Добродошли у Niš Digital Twin';
+            document.getElementById('infoSub').textContent = '🌍 Град у реалном времену · v2.0';
+            document.getElementById('infoDetail').innerHTML =
+                `<i class="fas fa-mouse-pointer"></i> Кликните на објекат за информације<br>` +
+                `<i class="fas fa-clock"></i> Користите временску скалу за историју/прогнозу<br>` +
+                `<i class="fas fa-tv"></i> Отворите Командни центар за KPI`;
+
+            setTimeout(() => {
+                panel.classList.remove('visible');
+            }, 5000);
+        }, 1000);
+
+        console.log('🌍 Niš Digital Twin v2.0 — Прототип за презентацију');
+        console.log('📍 Центр: 43.3191°N, 21.8956°E');
+        console.log('📊 Објеката:', Object.values(data).reduce((a, b) => a + (b.length || 0), 0) + data.buildings3d
+        .length + data.incidents.length);
+        console.log('🌐 Језици: СР, EN, RU');
+        console.log('🆕 Ново: 3D зграде, топлотна мапа, инциденти, временска скала, командни центар');
+        console.log('💡 Кликните по објекту за информације');
+    </script>
+
+</body>
+</html>
